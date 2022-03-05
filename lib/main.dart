@@ -11,22 +11,50 @@ Future<void> main() async {
   await EasyLocalization.ensureInitialized();
 
   runApp(
-    AppLocalization(child: const MyApp()),
+    AppLocalization(
+      child: const MyApp(),
+    ),
   );
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
+  static final ValueNotifier<ThemeMode> themeNotifier =
+      ValueNotifier(ThemeMode.light);
+
   @override
   Widget build(BuildContext context) {
     Wakelock.enable();
-    return MaterialApp(
-      localizationsDelegates: context.localizationDelegates,
-      supportedLocales: context.supportedLocales,
-      locale: context.locale,
-      debugShowCheckedModeBanner: false,
-      routes: AppRoutes.getRouteDestinations(context),
-    );
+    return ValueListenableBuilder<ThemeMode>(
+        valueListenable: themeNotifier,
+        builder: (_, ThemeMode currentMode, __) {
+          return MaterialApp(
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale: context.locale,
+            debugShowCheckedModeBanner: false,
+            routes: AppRoutes.getRouteDestinations(context),
+            darkTheme: ThemeData.dark(),
+            themeMode: currentMode,
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSwatch().copyWith(
+                primary: const Color.fromARGB(255, 0, 38, 99),
+                secondary: const Color.fromARGB(255, 86, 147, 245),
+                brightness: Brightness.light,
+              ),
+              visualDensity: VisualDensity.adaptivePlatformDensity,
+            ),
+          );
+        });
+  }
+}
+
+class DarkLightSwitcher with ChangeNotifier {
+  bool isDarkMode = true;
+
+  void toggleMode() {
+    isDarkMode = !isDarkMode;
+    notifyListeners();
   }
 }

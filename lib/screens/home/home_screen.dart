@@ -7,6 +7,8 @@ import '../../app/routes.dart';
 import '../../app/widgets/head_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 
+import '../../main.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -136,6 +138,22 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
                   child: MenuItem(
                     text: tr('decrease_text'),
                     icon: Icons.remove,
+                  ),
+                ),
+                PopupMenuItem(
+                  onTap: () {
+                    MyApp.themeNotifier.value =
+                        MyApp.themeNotifier.value == ThemeMode.light
+                            ? ThemeMode.dark
+                            : ThemeMode.light;
+                  },
+                  child: MenuItem(
+                    text: MyApp.themeNotifier.value == ThemeMode.dark
+                        ? tr('go_light')
+                        : tr('go_dark'),
+                    icon: MyApp.themeNotifier.value == ThemeMode.dark
+                        ? Icons.light_mode
+                        : Icons.dark_mode,
                   ),
                 ),
               ]),
@@ -280,12 +298,7 @@ class MenuItem extends StatelessWidget {
             color: Theme.of(context).primaryColor,
           ),
         ),
-        Text(
-          text,
-          style: TextStyle(
-            color: Theme.of(context).primaryColor,
-          ),
-        ),
+        Text(text),
       ],
     );
   }

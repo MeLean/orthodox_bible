@@ -50,7 +50,6 @@ class _NavigationScreenState extends State<NavigationScreen>
           onTap: () => _itemClicked(index),
           leading: Text(tr('go_to')),
           title: Text('${index + 1} ${_passageList![index].title}'),
-          textColor: Theme.of(context).primaryColor,
         );
       },
     );
