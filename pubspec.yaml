@@ -12,6 +12,7 @@ dependencies:
 
   cupertino_icons: ^1.0.2
   wakelock: ^0.6.1+1
+  flutter_secure_storage: ^5.0.2
 
 dev_dependencies:
   flutter_test:
@@ -26,6 +27,7 @@ flutter:
   assets:
     - assets/translations/
     - assets/json/
+    - assets/json/bg/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
