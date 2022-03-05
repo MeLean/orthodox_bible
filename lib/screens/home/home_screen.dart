@@ -122,6 +122,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
         icon: const Icon(Icons.arrow_forward),
       ),
       PopupMenuButton(
+          offset: const Offset(0, kToolbarHeight),
           itemBuilder: (_) => [
                 PopupMenuItem(
                   onTap: () => _increaseTextsize(),
