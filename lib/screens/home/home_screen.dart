@@ -108,7 +108,10 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
               await Navigator.of(context).pushNamed(AppRoutes.navigation);
           if (result != null) {
             final int fileNum = result as int;
-            final passage = await loadPassage(context, _localeName, fileNum);
+            final passage = await loadPassage(
+              context,
+              fileNum,
+            );
 
             _cacheAndUpdate(fileNum, _defaultHeadIndex, passage);
           }
@@ -146,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
                         MyApp.themeNotifier.value == ThemeMode.light
                             ? ThemeMode.dark
                             : ThemeMode.light;
+                    saveLightMode(MyApp.themeNotifier.value.name);
                   },
                   child: MenuItem(
                     text: MyApp.themeNotifier.value == ThemeMode.dark
@@ -209,7 +213,6 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
         final fileNum = _fileNum - 1;
         final passage = await loadPassage(
           context,
-          _localeName,
           fileNum,
         );
         final headIndex = passage.heads.length - 1;
@@ -234,7 +237,6 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
     if (_fileNum < _minFileNum || _fileNum >= _maxFileNum) {
       final passage = await loadPassage(
         context,
-        _localeName,
         _minFileNum,
       );
 
@@ -246,7 +248,6 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
       final fileNum = _fileNum + 1;
       final passage = await loadPassage(
         context,
-        _localeName,
         fileNum,
       );
 
@@ -260,9 +261,12 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
     final custFontSize = await loadTextSize(_defaultTextSize);
     final locale = await loadCachedLocale(_defaultLocaleName);
 
+    if (ThemeMode.dark.name == await loadlightMode()) {
+      MyApp.themeNotifier.value = ThemeMode.dark;
+    }
+
     final newPassage = await loadPassage(
       context,
-      _localeName,
       fileNum,
     );
 

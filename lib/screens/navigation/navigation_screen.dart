@@ -56,7 +56,7 @@ class _NavigationScreenState extends State<NavigationScreen>
   }
 
   void loadAllPhasses() async {
-    final loadedPassages = await loadAllPassages(context, '');
+    final loadedPassages = await loadAllPassages(context);
     setState(() {
       _passageList = loadedPassages;
       _isLoading = false;

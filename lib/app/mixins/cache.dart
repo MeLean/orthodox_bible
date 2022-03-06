@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 mixin AppCache {
+  static const _darkKeY = 'dark_mode_key';
   static const _encrStorage = FlutterSecureStorage();
   static const _fileNumKey = 'file_num';
   static const _headIndexKey = 'head_index_num';
@@ -21,6 +22,10 @@ mixin AppCache {
 
   Future<void> saveLocale(String locale) async {
     return _saveString(_localeKey, locale);
+  }
+
+  Future<void> saveLightMode(String mode) async {
+    return _saveString(_darkKeY, mode);
   }
 
   Future<int> loadFileNum(int defaultValue) async {
@@ -48,6 +53,10 @@ mixin AppCache {
 
   Future<String> loadCachedLocale(String defaultLocaleName) async {
     return await _loadString(_localeKey) ?? defaultLocaleName;
+  }
+
+  Future<String?> loadlightMode() async {
+    return _loadString(_darkKeY);
   }
 
   Future<void> _saveString(String key, String value) async {
