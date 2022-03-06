@@ -20,14 +20,12 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
   static const _maxTextSize = 36;
   static const _minTextSize = 12;
   static const _startingFileNum = 1;
-  static const _defaultFileNum = 3;
+  static const _defaultFileNum = 51;
   static const _defaultTextSize = 16.0;
   static const _defaultLocaleName = 'bg';
   static const _defaultDuration = Duration(milliseconds: 500);
   static const _defaultCurve = Curves.ease;
   static const _defaultHeadIndex = 0;
-  static const _maxFileNum = 3;
-  static const _minFileNum = 1;
   late PageController _pageController;
   late String _localeName = _defaultLocaleName;
   Passage? _passage;
@@ -234,17 +232,18 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
   }
 
   void _calculateNextFileNum() async {
-    if (_fileNum < _minFileNum || _fileNum >= _maxFileNum) {
+    if (_fileNum < PassageLoader.minFileNum ||
+        _fileNum >= PassageLoader.maxFileNum) {
       final passage = await loadPassage(
         context,
-        _minFileNum,
+        PassageLoader.minFileNum,
       );
 
-      _cacheAndUpdate(_minFileNum, _defaultHeadIndex, passage);
+      _cacheAndUpdate(PassageLoader.minFileNum, _defaultHeadIndex, passage);
       return;
     }
 
-    if (_fileNum < _maxFileNum) {
+    if (_fileNum < PassageLoader.maxFileNum) {
       final fileNum = _fileNum + 1;
       final passage = await loadPassage(
         context,

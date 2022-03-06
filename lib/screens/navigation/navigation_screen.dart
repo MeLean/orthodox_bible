@@ -46,10 +46,13 @@ class _NavigationScreenState extends State<NavigationScreen>
     return ListView.builder(
       itemCount: length,
       itemBuilder: (context, index) {
-        return ListTile(
+        return InkWell(
           onTap: () => _itemClicked(index),
-          title: Text(tr('go_to')),
-          subtitle: Text('${index + 1} ${_passageList![index].title}'),
+          child: ListTile(
+            key: UniqueKey(),
+            title: Text('${tr('go_to')} ${index + 1}'),
+            subtitle: Text(_passageList![index].title),
+          ),
         );
       },
     );
