@@ -48,8 +48,8 @@ class _NavigationScreenState extends State<NavigationScreen>
       itemBuilder: (context, index) {
         return ListTile(
           onTap: () => _itemClicked(index),
-          leading: Text(tr('go_to')),
-          title: Text('${index + 1} ${_passageList![index].title}'),
+          title: Text(tr('go_to')),
+          subtitle: Text('${index + 1} ${_passageList![index].title}'),
         );
       },
     );
