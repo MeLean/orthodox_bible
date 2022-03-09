@@ -9,7 +9,7 @@ import '../../api/models/passage_response.dart';
 class PassagesRepo with PassageManager {
   Future<void> loadAndCachePassages() async {
     final response = await RestClient()
-        .doGet(AppEndpoints.passagesEndpoint, {'pageSize': '100'});
+        .doGet(PassagesEndpoints.bgEndpoint, {'pageSize': '100'});
 
     Iterable iterable = json.decode(response);
     final list = List<PassageRespose>.from(

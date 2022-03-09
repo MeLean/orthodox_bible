@@ -16,7 +16,7 @@ mixin AppCache {
     return _saveString(_headIndexKey, index.toString());
   }
 
-  Future<void> saveTextSize(double size) async {
+  Future<void> saveDiffSize(double size) async {
     return _saveString(_textSizeKey, size.toString());
   }
 
@@ -36,7 +36,7 @@ mixin AppCache {
     return await _loadInt(_headIndexKey) ?? defaultValue;
   }
 
-  Future<double> loadTextSize(double defaultValue) async {
+  Future<double> loadTextSizeDiff(double defaultValue) async {
     final strValue = await _loadString(_textSizeKey);
     double result = defaultValue;
 
