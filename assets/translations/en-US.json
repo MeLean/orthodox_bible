@@ -1,5 +1,6 @@
 {     
     "info": "This application is for everyone that whants to read Orthodox Bible. Holy to our Lord Jesus Christ.",
+    "internet_needed": "You need to be internet connected in order to download the texts for the first time. Find a strong internet connection and try again!",
     "app_name": "Orthodox Bible",
     "go_light": "Light theme",
     "go_dark": "Dark theme",

@@ -2,7 +2,7 @@ import 'dart:convert' as convert;
 import 'package:http/http.dart' as http;
 
 class RestClient {
-  static const String _baseUrl = 'sacredvest.backendless.app';
+  static const String baseUrl = 'sacredvest.backendless.app';
   static const Map<String, String> _requestHeaders = {
     'Content-Type': 'application/json',
   };
@@ -13,7 +13,7 @@ class RestClient {
       [Map<String, dynamic>? queryParameters]) async {
     final response = await http.get(
       Uri.https(
-        _baseUrl,
+        baseUrl,
         endpoint,
         queryParameters,
       ),

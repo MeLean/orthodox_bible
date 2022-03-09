@@ -29,6 +29,7 @@ flutter:
   assets:
     - assets/translations/
     - assets/json/passages/
+    - assets/images/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
