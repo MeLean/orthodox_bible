@@ -1,3 +1,4 @@
+import 'package:bulgarian.orthodox.bible/app/localization.dart';
 import 'package:bulgarian.orthodox.bible/app/routes.dart';
 import 'package:bulgarian.orthodox.bible/screens/splash/pasages_repo.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +38,8 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _initApp() async {
+    AppLocalization.applySystemLocaleOrDefault(context);
+
     if (await arePassagesLoaded()) {
       _goToHomeScreen();
     } else {
