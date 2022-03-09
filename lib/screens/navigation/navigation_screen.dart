@@ -1,5 +1,5 @@
 import 'package:bulgarian.orthodox.bible/app/mixins/cache.dart';
-import 'package:bulgarian.orthodox.bible/app/mixins/file_loader.dart';
+import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 
@@ -14,7 +14,7 @@ class NavigationScreen extends StatefulWidget {
 }
 
 class _NavigationScreenState extends State<NavigationScreen>
-    with PassageLoader, LoadingIndicatorProvider, AppCache {
+    with PassageManager, LoadingIndicatorProvider, AppCache {
   late bool _isLoading;
   List<Passage>? _passageList;
 
@@ -60,10 +60,12 @@ class _NavigationScreenState extends State<NavigationScreen>
 
   void loadAllPhasses() async {
     final loadedPassages = await loadAllPassages(context);
-    setState(() {
-      _passageList = loadedPassages;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _passageList = loadedPassages;
+        _isLoading = false;
+      });
+    }
   }
 
   _itemClicked(int index) {

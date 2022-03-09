@@ -1,4 +1,4 @@
-import 'package:bulgarian.orthodox.bible/app/mixins/file_loader.dart';
+import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/mixins/cache.dart';
@@ -16,18 +16,16 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
+class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   static const _maxTextSize = 36;
   static const _minTextSize = 12;
   static const _startingFileNum = 1;
   static const _defaultFileNum = 51;
   static const _defaultTextSize = 16.0;
-  static const _defaultLocaleName = 'bg';
   static const _defaultDuration = Duration(milliseconds: 500);
   static const _defaultCurve = Curves.ease;
   static const _defaultHeadIndex = 0;
   late PageController _pageController;
-  late String _localeName = _defaultLocaleName;
   Passage? _passage;
   double _custFontSize = _defaultTextSize;
   int _fileNum = 1;
@@ -232,18 +230,18 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
   }
 
   void _calculateNextFileNum() async {
-    if (_fileNum < PassageLoader.minFileNum ||
-        _fileNum >= PassageLoader.maxFileNum) {
+    if (_fileNum < PassageManager.minFileNum ||
+        _fileNum >= PassageManager.maxFileNum) {
       final passage = await loadPassage(
         context,
-        PassageLoader.minFileNum,
+        PassageManager.minFileNum,
       );
 
-      _cacheAndUpdate(PassageLoader.minFileNum, _defaultHeadIndex, passage);
+      _cacheAndUpdate(PassageManager.minFileNum, _defaultHeadIndex, passage);
       return;
     }
 
-    if (_fileNum < PassageLoader.maxFileNum) {
+    if (_fileNum < PassageManager.maxFileNum) {
       final fileNum = _fileNum + 1;
       final passage = await loadPassage(
         context,
@@ -258,7 +256,6 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
     final fileNum = await loadFileNum(_defaultFileNum);
     final headIndex = await loadHeadIndex(_defaultHeadIndex);
     final custFontSize = await loadTextSize(_defaultTextSize);
-    final locale = await loadCachedLocale(_defaultLocaleName);
 
     if (ThemeMode.dark.name == await loadlightMode()) {
       MyApp.themeNotifier.value = ThemeMode.dark;
@@ -274,7 +271,6 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
       _headIndex = headIndex;
       _passage = newPassage;
       _custFontSize = custFontSize;
-      _localeName = locale;
     });
   }
 }
