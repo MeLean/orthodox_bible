@@ -13,6 +13,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   wakelock: ^0.6.1+1
   flutter_secure_storage: ^5.0.2
+  clipboard_manager: ^0.0.4
   path_provider: ^2.0.9
   http: ^0.13.4
 

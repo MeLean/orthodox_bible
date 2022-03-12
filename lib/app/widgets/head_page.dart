@@ -1,10 +1,11 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class HeadPage extends StatelessWidget {
   const HeadPage({
     Key? key,
     required this.text,
     required double custFontSize,
+    ScrollController? scrollControler,
   })  : _custFontSize = custFontSize,
         super(key: key);
 
@@ -13,20 +14,23 @@ class HeadPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.topCenter,
-              child: Text(
-                text ?? '',
-                textAlign: TextAlign.start,
-                style: TextStyle(fontSize: _custFontSize),
+    return Scrollbar(
+      radius: const Radius.circular(16.0),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topCenter,
+                child: SelectableText(
+                  text ?? '',
+                  textAlign: TextAlign.start,
+                  style: TextStyle(fontSize: _custFontSize),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

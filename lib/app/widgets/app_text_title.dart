@@ -18,7 +18,7 @@ class TextTitle extends StatelessWidget {
       padding: const EdgeInsets.all(8.0),
       child: SizedBox(
         width: double.infinity,
-        child: Text(
+        child: SelectableText(
           _text,
           textAlign: TextAlign.start,
           style: TextStyle(fontSize: _custFontSize),

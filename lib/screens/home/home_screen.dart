@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     WidgetsBinding.instance?.addPostFrameCallback((_) {
       _initFromCacheOrDefault();
     });
@@ -52,16 +53,8 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
 
   @override
   Widget build(BuildContext context) {
-    _pageController = PageController();
-
     WidgetsBinding.instance?.addPostFrameCallback((_) {
-      if (_passage?.heads.isNotEmpty == true) {
-        _pageController.animateToPage(
-          _headIndex,
-          duration: _defaultDuration,
-          curve: _defaultCurve,
-        );
-      }
+      goToAndScroll();
     });
 
     return Scaffold(
@@ -106,27 +99,21 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
     );
   }
 
+  void goToAndScroll() async {
+    if (_passage?.heads.isNotEmpty == true) {
+      await _pageController.animateToPage(
+        _headIndex,
+        duration: _defaultDuration,
+        curve: _defaultCurve,
+      );
+    }
+  }
+
   List<Widget> get _createActions {
     return [
       IconButton(
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.info),
         icon: const Icon(Icons.info_outline),
-      ),
-      IconButton(
-        onPressed: () async {
-          final result =
-              await Navigator.of(context).pushNamed(AppRoutes.navigation);
-          if (result != null) {
-            final int fileNum = result as int;
-            final passage = await loadPassage(
-              context,
-              fileNum,
-            );
-
-            _cacheAndUpdate(fileNum, _defaultHeadIndex, passage);
-          }
-        },
-        icon: const Icon(Icons.navigation_outlined),
       ),
       IconButton(
         onPressed: () => _getPreviusHead(),
@@ -143,6 +130,10 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       IconButton(
         onPressed: () => _decreseTextsize(),
         icon: const Icon(Icons.remove),
+      ),
+      IconButton(
+        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.search),
+        icon: const Icon(Icons.navigation_outlined),
       ),
       PopupMenuButton(
           offset: const Offset(0, kToolbarHeight),

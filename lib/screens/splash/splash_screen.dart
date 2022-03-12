@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:bulgarian.orthodox.bible/app/localization.dart';
+import 'package:bulgarian.orthodox.bible/app/mixins/loading.dart';
 import 'package:bulgarian.orthodox.bible/app/routes.dart';
 import 'package:bulgarian.orthodox.bible/screens/splash/pasages_repo.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,6 @@ import 'package:easy_localization/easy_localization.dart';
 
 import '../../api/rest_client.dart';
 import '../../app/mixins/passage_manager.dart';
-import '../../app/widgets/app_text_title.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -18,8 +18,10 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with PassageManager {
-  static const int _goHomeDelayMilis = 1000;
+class _SplashScreenState extends State<SplashScreen>
+    with PassageManager, LoadingIndicatorProvider {
+  bool _shouldLoadData = false;
+  bool _isLoading = true;
   String _msg = '';
 
   @override
@@ -33,55 +35,59 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.only(
-          top: 12.0,
-          left: 24.0,
-          right: 24.0,
-          bottom: 64.0,
-        ),
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/orthodox_cross.png'),
-              fit: BoxFit.fitWidth,
-            ),
+      body: Stack(children: [
+        _shouldLoadData ? _createDataLoadingScreen() : Container(),
+        _isLoading ? provideLoadingIndicator() : Container(),
+      ]),
+    );
+  }
+
+  Widget _createDataLoadingScreen() {
+    return Padding(
+      padding: const EdgeInsets.only(
+        top: 12.0,
+        left: 24.0,
+        right: 24.0,
+        bottom: 64.0,
+      ),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/orthodox_cross.png'),
+            fit: BoxFit.fitWidth,
           ),
-          child: Expanded(
-            child: Align(
-                alignment: FractionalOffset.bottomCenter,
-                child: showButtonIfNeeded()),
-          ),
         ),
+        child: Align(
+            alignment: FractionalOffset.bottomCenter,
+            child: showButtonIfNeeded()),
       ),
     );
   }
 
   void _initApp() async {
     AppLocalization.applySystemLocaleOrDefault(context);
-
     if (await arePassagesLoaded()) {
       _goToHomeScreen();
     } else {
+      setState(() => _shouldLoadData = true);
       _loadPassages();
     }
   }
 
-  Future<void> _goToHomeScreen({int dalay = _goHomeDelayMilis}) async {
-    await Future.delayed(Duration(milliseconds: dalay), () {
-      Navigator.pushNamedAndRemoveUntil(
-          context, AppRoutes.home, (route) => false);
-    });
+  Future<void> _goToHomeScreen() async {
+    Navigator.pushNamedAndRemoveUntil(
+        context, AppRoutes.home, (route) => false);
   }
 
   Future<void> _loadPassages() async {
+    setState(() => _isLoading = true);
     try {
       final result = await InternetAddress.lookup(RestClient.baseUrl);
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         PassagesRepo()
             .loadAndCachePassages()
             .then(
-              (_) => _goToHomeScreen(dalay: 0),
+              (_) => _goToHomeScreen(),
             )
             .onError(
               (error, stackTrace) => debugPrint(error.toString()),
@@ -89,6 +95,7 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager {
       }
     } on SocketException catch (_) {
       setState(() {
+        _isLoading = false;
         _msg = tr('internet_needed');
       });
     }
