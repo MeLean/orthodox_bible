@@ -6,7 +6,7 @@
     "go_dark": "Dark theme",
     "type_to_search": "Тype here to search",
     "go_to": "Go",
-    "search_to_short": "Search test should be atleast 3 chars!",
+    "search_to_short": "Search test should be atleast %s chars!",
     "no_results": "Nothing found!",
     "copy": "Copy",
     "done": "Done",

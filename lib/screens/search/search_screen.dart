@@ -21,7 +21,7 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen>
     with LoadingIndicatorProvider, PassageManager, AppCache {
   final TextEditingController _searchQueryController = TextEditingController();
-  static const int _minSearchLenght = 3;
+  static const int _minSearchLenght = 5;
   bool _isLoading = true;
   String _searchQuery = "";
   List<Passage> _passageList = [];
@@ -166,7 +166,8 @@ class _SearchScreenState extends State<SearchScreen>
   Future<Map<String, List<SearchResult>>> _buildSearchResults(
       String searchQuery) async {
     if (searchQuery.length < _minSearchLenght) {
-      return Future.error(tr('search_to_short'));
+      return Future.error(
+          tr('search_to_short').replaceAll('%s', _minSearchLenght.toString()));
     }
 
     if (_passageList.isEmpty) {
@@ -181,7 +182,7 @@ class _SearchScreenState extends State<SearchScreen>
       for (var headIndex = 0; headIndex < passageHeads.length; headIndex++) {
         final head = passageHeads[headIndex];
 
-        if (head.contains(searchQuery)) {
+        if (head.toLowerCase().contains(searchQuery.toLowerCase())) {
           final Map<int, String> lineMap = _extractRows(head, searchQuery);
           final List<SearchResult> resultList = [];
           lineMap.forEach((key, value) {

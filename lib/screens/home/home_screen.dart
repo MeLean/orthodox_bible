@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../app/mixins/cache.dart';
 import '../../app/models/passage.dart';
 import '../../app/routes.dart';
+import '../../app/widgets/app_lcon_button.dart';
 import '../../app/widgets/app_text_title.dart';
 import '../../app/widgets/head_page.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -111,27 +112,27 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
 
   List<Widget> get _createActions {
     return [
-      IconButton(
+      AppIconButton(
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.info),
         icon: const Icon(Icons.info_outline),
       ),
-      IconButton(
+      AppIconButton(
         onPressed: () => _getPreviusHead(),
         icon: const Icon(Icons.arrow_back),
       ),
-      IconButton(
+      AppIconButton(
         onPressed: () => _getNextHead(),
         icon: const Icon(Icons.arrow_forward),
       ),
-      IconButton(
+      AppIconButton(
         onPressed: () => _increaseTextsize(),
         icon: const Icon(Icons.add),
       ),
-      IconButton(
+      AppIconButton(
         onPressed: () => _decreseTextsize(),
         icon: const Icon(Icons.remove),
       ),
-      IconButton(
+      AppIconButton(
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.search),
         icon: const Icon(Icons.navigation_outlined),
       ),

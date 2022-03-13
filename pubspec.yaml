@@ -29,7 +29,6 @@ flutter:
 
   assets:
     - assets/translations/
-    - assets/json/passages/
     - assets/images/
 
 

@@ -66,7 +66,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _initApp() async {
     AppLocalization.applySystemLocaleOrDefault(context);
-    if (await arePassagesLoaded()) {
+    final passagesAvailable = await arePassagesLoaded();
+
+    if (passagesAvailable) {
       _goToHomeScreen();
     } else {
       setState(() => _shouldLoadData = true);
