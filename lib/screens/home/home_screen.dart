@@ -115,26 +115,32 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       AppIconButton(
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.info),
         icon: const Icon(Icons.info_outline),
+        disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
         onPressed: () => _getPreviusHead(),
         icon: const Icon(Icons.arrow_back),
+        disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
         onPressed: () => _getNextHead(),
         icon: const Icon(Icons.arrow_forward),
+        disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
         onPressed: () => _increaseTextsize(),
         icon: const Icon(Icons.add),
+        disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
         onPressed: () => _decreseTextsize(),
         icon: const Icon(Icons.remove),
+        disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.search),
         icon: const Icon(Icons.navigation_outlined),
+        disableAfterClick: _defaultDuration,
       ),
       PopupMenuButton(
           offset: const Offset(0, kToolbarHeight),

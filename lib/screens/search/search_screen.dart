@@ -150,7 +150,7 @@ class _SearchScreenState extends State<SearchScreen>
 
     for (var i = 0; i < lines.length; i++) {
       final rowText = lines[i];
-      if (rowText.contains(searchQuery)) {
+      if (rowText.containsIcnoreCase(searchQuery)) {
         foundedLinesInHead.putIfAbsent(i, () => rowText);
       }
     }
@@ -182,7 +182,7 @@ class _SearchScreenState extends State<SearchScreen>
       for (var headIndex = 0; headIndex < passageHeads.length; headIndex++) {
         final head = passageHeads[headIndex];
 
-        if (head.toLowerCase().contains(searchQuery.toLowerCase())) {
+        if (head.containsIcnoreCase(searchQuery)) {
           final Map<int, String> lineMap = _extractRows(head, searchQuery);
           final List<SearchResult> resultList = [];
           lineMap.forEach((key, value) {
@@ -290,4 +290,10 @@ class _SearchScreenState extends State<SearchScreen>
         ),
       )
       .toList();
+}
+
+extension ContainsIgnoreCase on String {
+  bool containsIcnoreCase(String text) {
+    return toLowerCase().contains(text.toLowerCase());
+  }
 }

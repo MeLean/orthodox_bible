@@ -5,7 +5,7 @@ class AppIconButton extends StatefulWidget {
     Key? key,
     required this.onPressed,
     required this.icon,
-    this.disableAfterClick = const Duration(milliseconds: 500),
+    this.disableAfterClick = const Duration(milliseconds: 0),
   }) : super(key: key);
 
   final Function onPressed;
