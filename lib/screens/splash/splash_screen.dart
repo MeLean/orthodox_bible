@@ -95,10 +95,10 @@ class _SplashScreenState extends State<SplashScreen>
               (error, stackTrace) => debugPrint(error.toString()),
             );
       }
-    } on SocketException catch (_) {
+    } catch (ex) {
       setState(() {
         _isLoading = false;
-        _msg = tr('internet_needed');
+        _msg = tr('internet_needed' + ex.toString());
       });
     }
   }
