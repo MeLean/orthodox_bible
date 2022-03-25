@@ -276,6 +276,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       _fileNum = fileNum;
       _headIndex = headIndex;
       _passage = newPassage;
+      _textDiff = textDiff;
       _custTitleSize = _calculateTitleSize(textDiff);
       _custTextSize = _calcualteTextSize(textDiff);
     });
