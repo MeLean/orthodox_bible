@@ -18,8 +18,11 @@ mixin PassageManager {
     return '${directory.path}${Platform.pathSeparator}$_pasageFolderName';
   }
 
-  Future<bool> arePassagesLoaded() async =>
-      File(await _createFileName(maxFileNum)).exists();
+  Future<bool> arePassagesLoaded() async {
+    final fileName = await _createFileName(maxFileNum);
+    final result = File(fileName).exists();
+    return result;
+  }
 
   Future<void> savePassagesLocaly(List<PassageRespose> list) async {
     for (PassageRespose resposne in list) {

@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 class HeadPage extends StatelessWidget {
   const HeadPage({
@@ -31,25 +29,10 @@ class HeadPage extends StatelessWidget {
                   style: TextStyle(fontSize: _custFontSize),
                 ),
               ),
-              FutureBuilder(
-                  future: getVersion(),
-                  builder: (ctx, snapshot) {
-                    return SelectableText(
-                      snapshot.data?.toString() ?? '',
-                      textAlign: TextAlign.start,
-                      style: TextStyle(fontSize: _custFontSize),
-                    );
-                  })
             ],
           ),
         ),
       ),
     );
-  }
-
-  Future<String> getVersion() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    String debug = kDebugMode ? " - debug" : "";
-    return "${packageInfo.version}$debug";
   }
 }
