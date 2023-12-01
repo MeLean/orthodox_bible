@@ -25,7 +25,23 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+
 android {
+     bundle {
+        language {
+            // Specifies that the app bundle should not support
+            // configuration APKs for language resources. These
+            // resources are instead packaged with each base and
+            // dynamic feature APK.
+            enableSplit = false
+        }
+    }
     compileSdkVersion flutter.compileSdkVersion
 
     compileOptions {
@@ -43,19 +59,27 @@ android {
 
     defaultConfig {
         applicationId "bulgarian.orthodox.bible"
-        minSdkVersion 18
-        targetSdkVersion flutter.targetSdkVersion
+        minSdkVersion 19
+        targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
-    buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
-        }
-    }
+    signingConfigs {
+       release {
+           keyAlias keystoreProperties['keyAlias']
+           keyPassword keystoreProperties['keyPassword']
+           storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+           storePassword keystoreProperties['storePassword']
+       }
+   }
+   buildTypes {
+       release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+       }
+   }
 }
 
 flutter {
@@ -64,4 +88,10 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+}
+
+task printTargetSdkVersion {
+    doLast {
+        println("Target SDK Version: ${android.defaultConfig.targetSdkVersion}")
+    }
 }

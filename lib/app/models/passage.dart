@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:bulgarian.orthodox.bible/api/models/passage_response.dart';
 import 'package:flutter/foundation.dart';
 
 class Passage {
@@ -54,4 +55,8 @@ class Passage {
 
   @override
   int get hashCode => title.hashCode ^ heads.hashCode;
+
+  static Passage fromResponse(PassageRespose resp) {
+    return Passage(resp.title, resp.heads);
+  }
 }

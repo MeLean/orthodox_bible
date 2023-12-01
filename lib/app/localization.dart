@@ -1,19 +1,27 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class AppLocalization extends EasyLocalization {
   static const appLocales = [
     Locale('bg', 'BG'),
+    //TODO uncomment below when english version is available in the BE
+    //Locale('en', 'US'),
   ];
 
-  static void changeLocale(
-    BuildContext context,
-    Locale locale,
-  ) async {
-    await context.setLocale(locale);
+  static String _localeCode = appLocales.first.languageCode;
+
+  static void applySystemLocaleOrDefault(BuildContext context) {
+    changeLocaleByTextOrDefault(
+        context, _extractCodeFromLocaleName(Platform.localeName));
   }
 
-  static void changeByText(
+  static String getLocaleCode() {
+    return _localeCode;
+  }
+
+  static void changeLocaleByTextOrDefault(
     BuildContext context,
     String langStr,
   ) async {
@@ -26,19 +34,12 @@ class AppLocalization extends EasyLocalization {
       }
     }
 
+    _localeCode = locale.languageCode;
     await context.setLocale(locale);
   }
 
-  static void changeLocaleByIndex(
-    BuildContext context,
-    int index,
-  ) async {
-    if (index >= appLocales.length || index < 0) {
-      return;
-    }
-
-    return changeLocale(context, appLocales[index]);
-  }
+  static String _extractCodeFromLocaleName(String localeName) =>
+      localeName.split('_')[0];
 
   AppLocalization({
     Key? key,

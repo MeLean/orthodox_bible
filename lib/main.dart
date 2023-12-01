@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app/localization.dart';
-import 'package:wakelock/wakelock.dart';
 
 import 'app/routes.dart';
 
@@ -20,12 +20,11 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
-  static final ValueNotifier<ThemeMode> themeNotifier =
-      ValueNotifier(ThemeMode.light);
+  static final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
   @override
   Widget build(BuildContext context) {
-    Wakelock.enable();
+    WakelockPlus.enable();
     return ValueListenableBuilder<ThemeMode>(
         valueListenable: themeNotifier,
         builder: (_, ThemeMode currentMode, __) {

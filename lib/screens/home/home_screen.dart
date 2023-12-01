@@ -1,9 +1,11 @@
-import 'package:bulgarian.orthodox.bible/app/mixins/file_loader.dart';
+import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/mixins/cache.dart';
 import '../../app/models/passage.dart';
 import '../../app/routes.dart';
+import '../../app/widgets/app_lcon_button.dart';
+import '../../app/widgets/app_text_title.dart';
 import '../../app/widgets/head_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 
@@ -16,27 +18,30 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
+class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   static const _maxTextSize = 36;
   static const _minTextSize = 12;
   static const _startingFileNum = 1;
   static const _defaultFileNum = 51;
   static const _defaultTextSize = 16.0;
-  static const _defaultLocaleName = 'bg';
+  static const _defaultTitleSize = 18.0;
+  static const _defaultTextDiff = 0.0;
   static const _defaultDuration = Duration(milliseconds: 500);
   static const _defaultCurve = Curves.ease;
   static const _defaultHeadIndex = 0;
   late PageController _pageController;
-  late String _localeName = _defaultLocaleName;
   Passage? _passage;
-  double _custFontSize = _defaultTextSize;
+  double _textDiff = _defaultTextDiff;
+  double _custTextSize = _defaultTextSize;
+  double _custTitleSize = _defaultTitleSize;
   int _fileNum = 1;
   int _headIndex = _defaultHeadIndex;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance?.addPostFrameCallback((_) {
+    _pageController = PageController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _initFromCacheOrDefault();
     });
   }
@@ -49,21 +54,12 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
 
   @override
   Widget build(BuildContext context) {
-    _pageController = PageController();
-
-    WidgetsBinding.instance?.addPostFrameCallback((_) {
-      if (_passage?.heads.isNotEmpty == true) {
-        _pageController.animateToPage(
-          _headIndex,
-          duration: _defaultDuration,
-          curve: _defaultCurve,
-        );
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      goToAndScroll();
     });
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_passage?.title ?? ''),
         actions: _createActions,
       ),
       body: SafeArea(
@@ -79,83 +75,85 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
               _getPreviusHead();
             }
           },
-          child: PageView.builder(
-              itemCount: _passage?.heads.length,
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                return HeadPage(
-                  text: _passage?.heads[index] ?? '',
-                  custFontSize: _custFontSize,
-                );
-              }),
+          child: Column(
+            children: [
+              TextTitle(
+                text: _passage?.title ?? '',
+                custFontSize: _custTitleSize,
+              ),
+              Expanded(
+                child: PageView.builder(
+                    itemCount: _passage?.heads.length,
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      return HeadPage(
+                        text: _passage?.heads[index] ?? '',
+                        custFontSize: _custTextSize,
+                      );
+                    }),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  void goToAndScroll() async {
+    if (_passage?.heads.isNotEmpty == true) {
+      await _pageController.animateToPage(
+        _headIndex,
+        duration: _defaultDuration,
+        curve: _defaultCurve,
+      );
+    }
+  }
+
   List<Widget> get _createActions {
     return [
-      IconButton(
+      AppIconButton(
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.info),
         icon: const Icon(Icons.info_outline),
+        disableAfterClick: _defaultDuration,
       ),
-      IconButton(
-        onPressed: () async {
-          final result =
-              await Navigator.of(context).pushNamed(AppRoutes.navigation);
-          if (result != null) {
-            final int fileNum = result as int;
-            final passage = await loadPassage(
-              context,
-              fileNum,
-            );
-
-            _cacheAndUpdate(fileNum, _defaultHeadIndex, passage);
-          }
-        },
-        icon: const Icon(Icons.navigation_outlined),
-      ),
-      IconButton(
+      AppIconButton(
         onPressed: () => _getPreviusHead(),
         icon: const Icon(Icons.arrow_back),
+        disableAfterClick: _defaultDuration,
       ),
-      IconButton(
+      AppIconButton(
         onPressed: () => _getNextHead(),
         icon: const Icon(Icons.arrow_forward),
+        disableAfterClick: _defaultDuration,
+      ),
+      AppIconButton(
+        onPressed: () => _increaseTextsize(),
+        icon: const Icon(Icons.add),
+        disableAfterClick: _defaultDuration,
+      ),
+      AppIconButton(
+        onPressed: () => _decreseTextsize(),
+        icon: const Icon(Icons.remove),
+        disableAfterClick: _defaultDuration,
+      ),
+      AppIconButton(
+        onPressed: () => Navigator.of(context).pushNamed(AppRoutes.search),
+        icon: const Icon(Icons.navigation_outlined),
+        disableAfterClick: _defaultDuration,
       ),
       PopupMenuButton(
           offset: const Offset(0, kToolbarHeight),
           itemBuilder: (_) => [
                 PopupMenuItem(
-                  onTap: () => _increaseTextsize(),
-                  child: MenuItem(
-                    text: tr('increase_text'),
-                    icon: Icons.add,
-                  ),
-                ),
-                PopupMenuItem(
-                  onTap: () => _decreseTextsize(),
-                  child: MenuItem(
-                    text: tr('decrease_text'),
-                    icon: Icons.remove,
-                  ),
-                ),
-                PopupMenuItem(
                   onTap: () {
                     MyApp.themeNotifier.value =
-                        MyApp.themeNotifier.value == ThemeMode.light
-                            ? ThemeMode.dark
-                            : ThemeMode.light;
+                        MyApp.themeNotifier.value == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
                     saveLightMode(MyApp.themeNotifier.value.name);
                   },
                   child: MenuItem(
-                    text: MyApp.themeNotifier.value == ThemeMode.dark
-                        ? tr('go_light')
-                        : tr('go_dark'),
-                    icon: MyApp.themeNotifier.value == ThemeMode.dark
-                        ? Icons.light_mode
-                        : Icons.dark_mode,
+                    text: MyApp.themeNotifier.value == ThemeMode.dark ? tr('go_light') : tr('go_dark'),
+                    icon: MyApp.themeNotifier.value == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
                   ),
                 ),
               ]),
@@ -163,28 +161,27 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
   }
 
   void _increaseTextsize() {
-    if (_custFontSize <= _maxTextSize) {
-      final size = _custFontSize += 2;
-      saveTextSize(size);
+    if (_custTextSize <= _maxTextSize) {
+      saveDiffSize(_textDiff += 2);
       setState(() {
-        _custFontSize = size;
+        _custTextSize = _calcualteTextSize(_textDiff);
+        _custTitleSize = _calculateTitleSize(_textDiff);
       });
     }
   }
 
   void _decreseTextsize() {
-    if (_custFontSize >= _minTextSize) {
-      final size = _custFontSize -= 2;
-      saveTextSize(size);
+    if (_custTextSize >= _minTextSize) {
+      saveDiffSize(_textDiff -= 2);
       setState(() {
-        _custFontSize = size;
+        _custTextSize = _calcualteTextSize(_textDiff);
+        _custTitleSize = _calculateTitleSize(_textDiff);
       });
     }
   }
 
   void _getNextHead() {
-    int pasageLenght =
-        _passage?.heads.length != null ? _passage!.heads.length : 1 << 63;
+    int pasageLenght = _passage?.heads.length != null ? _passage!.heads.length : 1 << 63;
 
     if (_headIndex < pasageLenght - 1) {
       _pageController.nextPage(
@@ -232,18 +229,17 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
   }
 
   void _calculateNextFileNum() async {
-    if (_fileNum < PassageLoader.minFileNum ||
-        _fileNum >= PassageLoader.maxFileNum) {
+    if (_fileNum < PassageManager.minFileNum || _fileNum >= PassageManager.maxFileNum) {
       final passage = await loadPassage(
         context,
-        PassageLoader.minFileNum,
+        PassageManager.minFileNum,
       );
 
-      _cacheAndUpdate(PassageLoader.minFileNum, _defaultHeadIndex, passage);
+      _cacheAndUpdate(PassageManager.minFileNum, _defaultHeadIndex, passage);
       return;
     }
 
-    if (_fileNum < PassageLoader.maxFileNum) {
+    if (_fileNum < PassageManager.maxFileNum) {
       final fileNum = _fileNum + 1;
       final passage = await loadPassage(
         context,
@@ -257,8 +253,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
   void _initFromCacheOrDefault() async {
     final fileNum = await loadFileNum(_defaultFileNum);
     final headIndex = await loadHeadIndex(_defaultHeadIndex);
-    final custFontSize = await loadTextSize(_defaultTextSize);
-    final locale = await loadCachedLocale(_defaultLocaleName);
+    final textDiff = await loadTextSizeDiff(_defaultTextDiff);
 
     if (ThemeMode.dark.name == await loadlightMode()) {
       MyApp.themeNotifier.value = ThemeMode.dark;
@@ -273,10 +268,14 @@ class _HomeScreenState extends State<HomeScreen> with PassageLoader, AppCache {
       _fileNum = fileNum;
       _headIndex = headIndex;
       _passage = newPassage;
-      _custFontSize = custFontSize;
-      _localeName = locale;
+      _textDiff = textDiff;
+      _custTitleSize = _calculateTitleSize(textDiff);
+      _custTextSize = _calcualteTextSize(textDiff);
     });
   }
+
+  double _calculateTitleSize(diff) => _defaultTitleSize + diff;
+  double _calcualteTextSize(diff) => _defaultTextSize + diff;
 }
 
 class MenuItem extends StatelessWidget {
