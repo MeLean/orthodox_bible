@@ -59,8 +59,8 @@ android {
 
     defaultConfig {
         applicationId "bulgarian.orthodox.bible"
-        minSdkVersion 18
-        targetSdkVersion flutter.targetSdkVersion
+        minSdkVersion 19
+        targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
@@ -88,4 +88,10 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+}
+
+task printTargetSdkVersion {
+    doLast {
+        println("Target SDK Version: ${android.defaultConfig.targetSdkVersion}")
+    }
 }

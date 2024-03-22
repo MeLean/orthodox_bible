@@ -1,5 +1,5 @@
 // ignore: import_of_legacy_library_into_null_safe
-import 'package:clipboard_manager/clipboard_manager.dart';
+import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -18,8 +18,7 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen>
-    with LoadingIndicatorProvider, PassageManager, AppCache {
+class _SearchScreenState extends State<SearchScreen> with LoadingIndicatorProvider, PassageManager, AppCache {
   final TextEditingController _searchQueryController = TextEditingController();
   static const int _minSearchLenght = 5;
   bool _isLoading = true;
@@ -31,7 +30,7 @@ class _SearchScreenState extends State<SearchScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance?.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _showAll();
     });
   }
@@ -163,11 +162,9 @@ class _SearchScreenState extends State<SearchScreen>
     setState(() => _isLoading = true);
   }
 
-  Future<Map<String, List<SearchResult>>> _buildSearchResults(
-      String searchQuery) async {
+  Future<Map<String, List<SearchResult>>> _buildSearchResults(String searchQuery) async {
     if (searchQuery.length < _minSearchLenght) {
-      return Future.error(
-          tr('search_to_short').replaceAll('%s', _minSearchLenght.toString()));
+      return Future.error(tr('search_to_short').replaceAll('%s', _minSearchLenght.toString()));
     }
 
     if (_passageList.isEmpty) {
@@ -208,8 +205,7 @@ class _SearchScreenState extends State<SearchScreen>
     await saveFileNum(num);
     await saveHeadIndex(headIndex);
 
-    Navigator.of(context)
-        .pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
   }
 
   int _calculateNum(String item) {
@@ -225,7 +221,7 @@ class _SearchScreenState extends State<SearchScreen>
   }
 
   _copyToClipboard(SearchResult result) {
-    ClipboardManager.copyToClipBoard(result.prityPrint());
+    Clipboard.setData(ClipboardData(text: result.text));
     _showMessage(tr('done'), Colors.green[400]);
   }
 

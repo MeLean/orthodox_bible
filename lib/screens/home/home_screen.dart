@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   void initState() {
     super.initState();
     _pageController = PageController();
-    WidgetsBinding.instance?.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _initFromCacheOrDefault();
     });
   }
@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance?.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       goToAndScroll();
     });
 
@@ -148,18 +148,12 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
                 PopupMenuItem(
                   onTap: () {
                     MyApp.themeNotifier.value =
-                        MyApp.themeNotifier.value == ThemeMode.light
-                            ? ThemeMode.dark
-                            : ThemeMode.light;
+                        MyApp.themeNotifier.value == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
                     saveLightMode(MyApp.themeNotifier.value.name);
                   },
                   child: MenuItem(
-                    text: MyApp.themeNotifier.value == ThemeMode.dark
-                        ? tr('go_light')
-                        : tr('go_dark'),
-                    icon: MyApp.themeNotifier.value == ThemeMode.dark
-                        ? Icons.light_mode
-                        : Icons.dark_mode,
+                    text: MyApp.themeNotifier.value == ThemeMode.dark ? tr('go_light') : tr('go_dark'),
+                    icon: MyApp.themeNotifier.value == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
                   ),
                 ),
               ]),
@@ -187,8 +181,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   }
 
   void _getNextHead() {
-    int pasageLenght =
-        _passage?.heads.length != null ? _passage!.heads.length : 1 << 63;
+    int pasageLenght = _passage?.heads.length != null ? _passage!.heads.length : 1 << 63;
 
     if (_headIndex < pasageLenght - 1) {
       _pageController.nextPage(
@@ -236,8 +229,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   }
 
   void _calculateNextFileNum() async {
-    if (_fileNum < PassageManager.minFileNum ||
-        _fileNum >= PassageManager.maxFileNum) {
+    if (_fileNum < PassageManager.minFileNum || _fileNum >= PassageManager.maxFileNum) {
       final passage = await loadPassage(
         context,
         PassageManager.minFileNum,

@@ -18,8 +18,7 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with PassageManager, LoadingIndicatorProvider {
+class _SplashScreenState extends State<SplashScreen> with PassageManager, LoadingIndicatorProvider {
   bool _shouldLoadData = false;
   bool _isLoading = true;
   String _msg = '';
@@ -27,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance?.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _initApp();
     });
   }
@@ -57,9 +56,7 @@ class _SplashScreenState extends State<SplashScreen>
             fit: BoxFit.fitWidth,
           ),
         ),
-        child: Align(
-            alignment: FractionalOffset.bottomCenter,
-            child: showButtonIfNeeded()),
+        child: Align(alignment: FractionalOffset.bottomCenter, child: showButtonIfNeeded()),
       ),
     );
   }
@@ -77,8 +74,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _goToHomeScreen() async {
-    Navigator.pushNamedAndRemoveUntil(
-        context, AppRoutes.home, (route) => false);
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
   }
 
   Future<void> _loadPassages() async {
