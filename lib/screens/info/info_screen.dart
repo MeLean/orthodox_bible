@@ -1,10 +1,15 @@
+import 'package:bulgarian.orthodox.bible/app/mixins/cache.dart';
 import 'package:bulgarian.orthodox.bible/app/widgets/head_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-class InfoScreen extends StatelessWidget {
+import '../../app/localization.dart';
+import '../../app/routes.dart';
+import '../../app/widgets/app_locale_picker.dart';
+
+class InfoScreen extends StatelessWidget with AppCache {
   const InfoScreen({Key? key}) : super(key: key);
 
   @override
@@ -17,6 +22,11 @@ class InfoScreen extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
+              AppLocalePicker(
+                  supportedLocales: AppLocalization.getSupprotedLanguageCodes(),
+                  localePickedCallback: (String languageCode) {
+                    _setLocaleAndLoadPassages(languageCode, context);
+                  }),
               HeadPage(
                 text: tr('info'),
                 custFontSize: 16.0,
@@ -41,5 +51,13 @@ class InfoScreen extends StatelessWidget {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
     String debug = kDebugMode ? " - debug" : "";
     return "${packageInfo.version}$debug";
+  }
+
+  void _setLocaleAndLoadPassages(String languageCode, BuildContext context) async {
+    await saveLanguageCode(languageCode);
+    await saveFileNum(1);
+    await saveHeadIndex(0);
+
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.splash, (route) => false);
   }
 }

@@ -5,10 +5,12 @@
     "go_light": "Светла тема",
     "go_dark": "Тъмна тема",
     "type_to_search": "Въведи текст за търсене",
-    "go_to": "Виж",
+    "go_there": "Виж",
     "search_to_short": "Текста за търсене трявба да е поне %s символа!",
     "no_results": "Няма намерени резултати!",
     "copy": "Копирай",
     "done": "Готово",
-    "something_wrong": "Нещо се обърка!"
+    "something_wrong": "Нещо се обърка!",
+    "new_order_file_num_str": "51",
+    "max_file_num_str": "77"
 } 

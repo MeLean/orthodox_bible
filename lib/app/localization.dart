@@ -1,45 +1,43 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class AppLocalization extends EasyLocalization {
-  static const appLocales = [
+  static const _appSupportedLocales = [
     Locale('bg', 'BG'),
-    //TODO uncomment below when english version is available in the BE
-    //Locale('en', 'US'),
+    Locale('ka', 'GE'),
   ];
 
-  static String _localeCode = appLocales.first.languageCode;
+  static final appDefaultLocale = _appSupportedLocales.first;
 
-  static void applySystemLocaleOrDefault(BuildContext context) {
-    changeLocaleByTextOrDefault(
-        context, _extractCodeFromLocaleName(Platform.localeName));
+  static bool isLanguageCodeSupported(String? laguageCode) {
+    if (laguageCode == null) return false;
+
+    return _appSupportedLocales.any((e) => e.languageCode == laguageCode);
   }
 
-  static String getLocaleCode() {
-    return _localeCode;
+  static List<String> getSupprotedLanguageCodes() {
+    return _appSupportedLocales.map((e) => e.languageCode).toList();
   }
 
-  static void changeLocaleByTextOrDefault(
+  static Future<void> applyLocaleByLanguageCodeOrDefault(
     BuildContext context,
     String langStr,
   ) async {
-    var locale = appLocales.first;
+    var locale = appDefaultLocale;
 
-    for (var appLocale in appLocales) {
-      if (appLocale.languageCode.toLowerCase() == langStr.toLowerCase()) {
-        locale = appLocale;
+    for (var appSupportedLocale in _appSupportedLocales) {
+      if (appSupportedLocale.languageCode.toLowerCase() == langStr.toLowerCase()) {
+        locale = appSupportedLocale;
         break;
       }
     }
 
-    _localeCode = locale.languageCode;
-    await context.setLocale(locale);
+    return await context.setLocale(locale);
   }
 
-  static String _extractCodeFromLocaleName(String localeName) =>
-      localeName.split('_')[0];
+  static String getCurrentLanguageCode(BuildContext context) {
+    return Localizations.localeOf(context).languageCode;
+  }
 
   AppLocalization({
     Key? key,
@@ -47,8 +45,8 @@ class AppLocalization extends EasyLocalization {
   }) : super(
           key: key,
           child: child,
-          supportedLocales: appLocales,
-          fallbackLocale: appLocales.first,
+          supportedLocales: _appSupportedLocales,
+          fallbackLocale: appDefaultLocale,
           path: 'assets/translations',
         );
 }
