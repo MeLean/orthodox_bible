@@ -20,7 +20,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> with LoadingIndicatorProvider, PassageManager, AppCache {
   final TextEditingController _searchQueryController = TextEditingController();
-  static const int _minSearchLenght = 5;
+  static const int _minSearchLenght = 3;
   bool _isLoading = true;
   String _searchQuery = "";
   List<Passage> _passageList = [];
@@ -61,7 +61,7 @@ class _SearchScreenState extends State<SearchScreen> with LoadingIndicatorProvid
           ),
           Visibility(
             visible: _isLoading,
-            child: provideLoadingIndicator(),
+            child: provideLoadingIndicator(context),
           ),
         ],
       ),
@@ -70,15 +70,13 @@ class _SearchScreenState extends State<SearchScreen> with LoadingIndicatorProvid
 
   Widget _buildSearchField() {
     return TextField(
-      cursorColor: Colors.white,
       controller: _searchQueryController,
       keyboardType: TextInputType.text,
       autofocus: false,
       decoration: InputDecoration(
         hintText: tr('type_to_search'),
-        hintStyle: const TextStyle(color: Colors.white),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.tertiary),
       ),
-      style: const TextStyle(color: Colors.white, fontSize: 16.0),
       onChanged: (query) => _searchQuery = query.trim(),
       onSubmitted: (_) => _initSearch(),
     );
@@ -249,7 +247,7 @@ class _SearchScreenState extends State<SearchScreen> with LoadingIndicatorProvid
               title: Text(passageTitle),
               trailing: InkWell(
                 onTap: () => _goTo(num),
-                child: Text(tr('go_to')),
+                child: Text(tr('go_there')),
               ),
             );
           },
@@ -274,7 +272,7 @@ class _SearchScreenState extends State<SearchScreen> with LoadingIndicatorProvid
               children: [
                 InkWell(
                   onTap: () => _goTo(num, headIndex: result.headIndex),
-                  child: Text(tr('go_to')),
+                  child: Text(tr('go_there')),
                 ),
                 InkWell(
                   onTap: () => _copyToClipboard(result),

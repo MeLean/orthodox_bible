@@ -6,7 +6,7 @@ mixin AppCache {
   static const _fileNumKey = 'file_num';
   static const _headIndexKey = 'head_index_num';
   static const _textSizeKey = 'text_size';
-  static const _localeKey = 'cached_locale';
+  static const _languageCode = 'cached_language_code';
 
   Future<void> saveFileNum(int num) async {
     return _saveString(_fileNumKey, num.toString());
@@ -20,8 +20,8 @@ mixin AppCache {
     return _saveString(_textSizeKey, size.toString());
   }
 
-  Future<void> saveLocale(String locale) async {
-    return _saveString(_localeKey, locale);
+  Future<void> saveLanguageCode(String languageCode) async {
+    return _saveString(_languageCode, languageCode);
   }
 
   Future<void> saveLightMode(String mode) async {
@@ -51,8 +51,8 @@ mixin AppCache {
     return result;
   }
 
-  Future<String> loadCachedLocale(String defaultLocaleName) async {
-    return await _loadString(_localeKey) ?? defaultLocaleName;
+  Future<String?> loadCachedLanguageCodeOrNull() async {
+    return await _loadString(_languageCode);
   }
 
   Future<String?> loadlightMode() async {

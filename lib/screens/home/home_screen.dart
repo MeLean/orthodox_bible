@@ -1,3 +1,4 @@
+import 'package:bulgarian.orthodox.bible/app/localization.dart';
 import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart';
 import 'package:flutter/material.dart';
 
@@ -22,7 +23,6 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   static const _maxTextSize = 36;
   static const _minTextSize = 12;
   static const _startingFileNum = 1;
-  static const _defaultFileNum = 51;
   static const _defaultTextSize = 16.0;
   static const _defaultTitleSize = 18.0;
   static const _defaultTextDiff = 0.0;
@@ -30,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   static const _defaultCurve = Curves.ease;
   static const _defaultHeadIndex = 0;
   late PageController _pageController;
+  final int _defaultFileNum = int.tryParse(tr("new_order_file_num_str")) ?? _startingFileNum;
   Passage? _passage;
   double _textDiff = _defaultTextDiff;
   double _custTextSize = _defaultTextSize;
@@ -154,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
                   child: MenuItem(
                     text: MyApp.themeNotifier.value == ThemeMode.dark ? tr('go_light') : tr('go_dark'),
                     icon: MyApp.themeNotifier.value == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
+                    tint: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
               ]),
@@ -209,6 +211,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
         final passage = await loadPassage(
           context,
           fileNum,
+          AppLocalization.getCurrentLanguageCode(context),
         );
         final headIndex = passage.heads.length - 1;
 
@@ -221,29 +224,35 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
     await saveFileNum(fileNum);
     await saveHeadIndex(headIndex);
 
-    setState(() {
-      _fileNum = fileNum;
-      _headIndex = headIndex;
-      _passage = passage;
-    });
+    if (mounted) {
+      setState(() {
+        _fileNum = fileNum;
+        _headIndex = headIndex;
+        _passage = passage;
+      });
+    }
   }
 
   void _calculateNextFileNum() async {
-    if (_fileNum < PassageManager.minFileNum || _fileNum >= PassageManager.maxFileNum) {
+    int maxNum = maxFileNum();
+
+    if (_fileNum < PassageManager.minFileNum || _fileNum >= maxNum) {
       final passage = await loadPassage(
         context,
         PassageManager.minFileNum,
+        AppLocalization.getCurrentLanguageCode(context),
       );
 
       _cacheAndUpdate(PassageManager.minFileNum, _defaultHeadIndex, passage);
       return;
     }
 
-    if (_fileNum < PassageManager.maxFileNum) {
+    if (_fileNum < maxNum) {
       final fileNum = _fileNum + 1;
       final passage = await loadPassage(
         context,
         fileNum,
+        AppLocalization.getCurrentLanguageCode(context),
       );
 
       _cacheAndUpdate(fileNum, _defaultHeadIndex, passage);
@@ -262,16 +271,19 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
     final newPassage = await loadPassage(
       context,
       fileNum,
+      AppLocalization.getCurrentLanguageCode(context),
     );
 
-    setState(() {
-      _fileNum = fileNum;
-      _headIndex = headIndex;
-      _passage = newPassage;
-      _textDiff = textDiff;
-      _custTitleSize = _calculateTitleSize(textDiff);
-      _custTextSize = _calcualteTextSize(textDiff);
-    });
+    if (mounted) {
+      setState(() {
+        _fileNum = fileNum;
+        _headIndex = headIndex;
+        _passage = newPassage;
+        _textDiff = textDiff;
+        _custTitleSize = _calculateTitleSize(textDiff);
+        _custTextSize = _calcualteTextSize(textDiff);
+      });
+    }
   }
 
   double _calculateTitleSize(diff) => _defaultTitleSize + diff;
@@ -281,15 +293,18 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
 class MenuItem extends StatelessWidget {
   final String text;
   final IconData icon;
+  final Color? tint;
 
   const MenuItem({
     Key? key,
     required this.text,
     required this.icon,
+    this.tint,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final iconTint = tint ?? Theme.of(context).colorScheme.primary;
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -297,7 +312,7 @@ class MenuItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Icon(
             icon,
-            color: Theme.of(context).primaryColor,
+            color: iconTint,
           ),
         ),
         Text(text),

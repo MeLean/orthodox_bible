@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:bulgarian.orthodox.bible/app/localization.dart';
+import 'package:bulgarian.orthodox.bible/app/mixins/cache.dart';
 import 'package:bulgarian.orthodox.bible/app/mixins/loading.dart';
 import 'package:bulgarian.orthodox.bible/app/routes.dart';
+import 'package:bulgarian.orthodox.bible/app/widgets/app_locale_picker.dart';
 import 'package:bulgarian.orthodox.bible/screens/splash/pasages_repo.dart';
 import 'package:flutter/material.dart';
 
@@ -18,9 +21,12 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with PassageManager, LoadingIndicatorProvider {
-  bool _shouldLoadData = false;
-  bool _isLoading = true;
+class _SplashScreenState extends State<SplashScreen> with PassageManager, LoadingIndicatorProvider, AppCache {
+  bool _shouldShowPicker = false;
+  bool _allPassagesAvailable = false;
+  bool _isLoading = false;
+  String? _cachedLanguageCode;
+
   String _msg = '';
 
   @override
@@ -34,10 +40,16 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(children: [
-        _shouldLoadData ? _createDataLoadingScreen() : Container(),
-        _isLoading ? provideLoadingIndicator() : Container(),
-      ]),
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            _createDataLoadingScreen(),
+            _isLoading ? provideLoadingIndicator(context) : Container(),
+            _shouldShowPicker ? _provideLanguagePicker() : const SizedBox.shrink(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -47,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
         top: 12.0,
         left: 24.0,
         right: 24.0,
-        bottom: 64.0,
+        bottom: 12.0,
       ),
       child: DecoratedBox(
         decoration: const BoxDecoration(
@@ -56,20 +68,35 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
             fit: BoxFit.fitWidth,
           ),
         ),
-        child: Align(alignment: FractionalOffset.bottomCenter, child: showButtonIfNeeded()),
+        child: Align(alignment: FractionalOffset.bottomCenter, child: _showButtonIfNeeded()),
       ),
     );
   }
 
   void _initApp() async {
-    AppLocalization.applySystemLocaleOrDefault(context);
-    final passagesAvailable = await arePassagesLoaded();
+    _cachedLanguageCode = await loadCachedLanguageCodeOrNull();
 
-    if (passagesAvailable) {
-      _goToHomeScreen();
+    if (_cachedLanguageCode == null) {
+      _checkIfUserLocaleSupported();
+    }
+
+    _allPassagesAvailable = await arePassagesLoaded(_cachedLanguageCode);
+
+    _updateUiState();
+  }
+
+  void _updateUiState() async {
+    if (_cachedLanguageCode != null) {
+      await AppLocalization.applyLocaleByLanguageCodeOrDefault(context, _cachedLanguageCode!);
+      if (_allPassagesAvailable) {
+        _goToHomeScreen();
+      } else {
+        _loadPassages();
+      }
     } else {
-      setState(() => _shouldLoadData = true);
-      _loadPassages();
+      setState(() {
+        _shouldShowPicker = true;
+      });
     }
   }
 
@@ -83,23 +110,30 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
       final result = await InternetAddress.lookup(RestClient.baseUrl);
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         PassagesRepo()
-            .loadAndCachePassages()
+            .loadAndCachePassages(_cachedLanguageCode!)
             .then(
               (_) => _goToHomeScreen(),
             )
             .onError(
-              (error, stackTrace) => debugPrint(error.toString()),
-            );
+          (error, stackTrace) {
+            debugPrint(error.toString());
+            throw Exception(error.toString());
+          },
+        );
       }
     } catch (ex) {
-      setState(() {
-        _isLoading = false;
-        _msg = tr('internet_needed' + ex.toString());
-      });
+      setErrorState(ex);
     }
   }
 
-  Widget showButtonIfNeeded() {
+  void setErrorState(Object ex) {
+    setState(() {
+      _isLoading = false;
+      _msg = tr('internet_needed') + ex.toString();
+    });
+  }
+
+  Widget _showButtonIfNeeded() {
     if (_msg.isNotEmpty) {
       return Padding(
         padding: const EdgeInsets.all(8.0),
@@ -113,5 +147,40 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
     } else {
       return Container();
     }
+  }
+
+  Widget _provideLanguagePicker() {
+    return Positioned(
+      left: 8.0,
+      right: 8.0,
+      bottom: 8.0,
+      child: SizedBox(
+        height: 160.0,
+        width: MediaQuery.of(context).size.width,
+        child: AppLocalePicker(
+          supportedLocales: AppLocalization.getSupprotedLanguageCodes(),
+          localePickedCallback: (String languageCode) {
+            _setLocaleAndLoadPassages(languageCode);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _checkIfUserLocaleSupported() {
+    var languageCode = PlatformDispatcher.instance.locale.languageCode;
+    if (AppLocalization.isLanguageCodeSupported(languageCode)) {
+      _setLocaleAndLoadPassages(languageCode);
+    }
+  }
+
+  void _setLocaleAndLoadPassages(String languageCode) async {
+    saveLanguageCode(languageCode);
+    setState(() {
+      _cachedLanguageCode = languageCode;
+      _isLoading = true;
+    });
+
+    _updateUiState();
   }
 }
