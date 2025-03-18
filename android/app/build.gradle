@@ -21,8 +21,6 @@ android {
 
     defaultConfig {
         applicationId = "bulgarian.orthodox.bible"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -30,6 +28,11 @@ android {
 
         signingConfigs {
             release {
+                def keystoreProperties = new Properties()
+                def keystorePropertiesFile = rootProject.file('key.properties')
+                if (keystorePropertiesFile.exists()) {
+                    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                }
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
                 storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
@@ -40,9 +43,9 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
         }
     }
 }
