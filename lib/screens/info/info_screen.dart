@@ -54,10 +54,14 @@ class InfoScreen extends StatelessWidget with AppCache {
   }
 
   void _setLocaleAndLoadPassages(String languageCode, BuildContext context) async {
-    await saveLanguageCode(languageCode);
-    await saveFileNum(1);
-    await saveHeadIndex(0);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await saveLanguageCode(languageCode);
+      await saveFileNum(1);
+      await saveHeadIndex(0);
 
-    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.splash, (route) => false);
+      if (!context.mounted) return; // Prevents navigation on an unmounted widget
+
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.splash, (route) => false);
+    });
   }
 }

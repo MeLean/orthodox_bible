@@ -259,31 +259,37 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
     }
   }
 
-  void _initFromCacheOrDefault() async {
-    final fileNum = await loadFileNum(_defaultFileNum);
-    final headIndex = await loadHeadIndex(_defaultHeadIndex);
-    final textDiff = await loadTextSizeDiff(_defaultTextDiff);
+  void _initFromCacheOrDefault() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
 
-    if (ThemeMode.dark.name == await loadlightMode()) {
-      MyApp.themeNotifier.value = ThemeMode.dark;
-    }
+      try {
+        final fileNum = await loadFileNum(_defaultFileNum);
+        final headIndex = await loadHeadIndex(_defaultHeadIndex);
+        final textDiff = await loadTextSizeDiff(_defaultTextDiff);
+        final themeMode = await loadlightMode();
 
-    final newPassage = await loadPassage(
-      context,
-      fileNum,
-      AppLocalization.getCurrentLanguageCode(context),
-    );
+        if (themeMode == ThemeMode.dark.name) {
+          MyApp.themeNotifier.value = ThemeMode.dark;
+        }
 
-    if (mounted) {
-      setState(() {
-        _fileNum = fileNum;
-        _headIndex = headIndex;
-        _passage = newPassage;
-        _textDiff = textDiff;
-        _custTitleSize = _calculateTitleSize(textDiff);
-        _custTextSize = _calcualteTextSize(textDiff);
-      });
-    }
+        if (!mounted) return;
+
+        final languageCode = AppLocalization.getCurrentLanguageCode(context);
+        final newPassage = await loadPassage(context, fileNum, languageCode);
+
+        setState(() {
+          _fileNum = fileNum;
+          _headIndex = headIndex;
+          _passage = newPassage;
+          _textDiff = textDiff;
+          _custTitleSize = _calculateTitleSize(textDiff);
+          _custTextSize = _calcualteTextSize(textDiff);
+        });
+      } catch (e, stackTrace) {
+        debugPrint("Error in _initFromCacheOrDefault: $e\n$stackTrace");
+      }
+    });
   }
 
   double _calculateTitleSize(diff) => _defaultTitleSize + diff;

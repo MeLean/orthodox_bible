@@ -203,6 +203,7 @@ class _SearchScreenState extends State<SearchScreen> with LoadingIndicatorProvid
     await saveFileNum(num);
     await saveHeadIndex(headIndex);
 
+    if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
   }
 

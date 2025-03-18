@@ -90,7 +90,7 @@ packages:
     source: hosted
     version: "0.7.11"
   easy_localization:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: easy_localization
       sha256: "0f5239c7b8ab06c66440cfb0e9aa4b4640429c6668d5a42fe389c5de42220b12"
@@ -154,7 +154,7 @@ packages:
     source: hosted
     version: "2.21.1"
   firebase_database:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: firebase_database
       sha256: "9f961de7ed815edc74b8025476f3ee937c07900d3b39e8c84abcf17d4d534c7a"
