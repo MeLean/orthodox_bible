@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "620908408525",
+    "firebase_url": "https://orthodox-bible-1bbfc-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "orthodox-bible-1bbfc",
+    "storage_bucket": "orthodox-bible-1bbfc.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:620908408525:android:e0ba14062b79656144c384",
+        "android_client_info": {
+          "package_name": "bulgarian.orthodox.bible"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVhjO2ehl7L1WifOXihUdR53pxj-VJqZE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

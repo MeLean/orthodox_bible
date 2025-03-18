@@ -117,6 +117,11 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
             .onError(
           (error, stackTrace) {
             debugPrint(error.toString());
+            setState(() {
+              _isLoading = false;
+              _msg = error.toString();
+            });
+
             throw Exception(error.toString());
           },
         );
