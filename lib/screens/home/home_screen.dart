@@ -59,6 +59,8 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       goToAndScroll();
     });
 
+    print(" [BIBLE_APP_LOGGING] 🏠 HomeScreen reached");
+
     return Scaffold(
       appBar: AppBar(
         actions: _createActions,

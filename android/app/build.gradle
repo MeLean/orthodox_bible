@@ -22,7 +22,7 @@ android {
     defaultConfig {
         applicationId = "bulgarian.orthodox.bible"
         minSdk = 23
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
@@ -43,9 +43,11 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
             signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }

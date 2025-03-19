@@ -74,26 +74,38 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
   }
 
   void _initApp() async {
+    print("🟢 [BIBLE_APP_LOGGING] START: _initApp()");
+
     _cachedLanguageCode = await loadCachedLanguageCodeOrNull();
+    print("🟡 [BIBLE_APP_LOGGING] Cached language code: $_cachedLanguageCode");
 
     if (_cachedLanguageCode == null) {
+      print("🟡 [BIBLE_APP_LOGGING] Language code is null, checking locale support...");
       _checkIfUserLocaleSupported();
     }
 
     _allPassagesAvailable = await arePassagesLoaded(_cachedLanguageCode);
+    print("🟢 [BIBLE_APP_LOGGING] Passages available: $_allPassagesAvailable");
 
     _updateUiState();
   }
 
   void _updateUiState() async {
+    print("🟢 [BIBLE_APP_LOGGING] START: _updateUiState()");
+
     if (_cachedLanguageCode != null) {
+      print("🟡 [BIBLE_APP_LOGGING] Applying locale: $_cachedLanguageCode");
       await AppLocalization.applyLocaleByLanguageCodeOrDefault(context, _cachedLanguageCode!);
+
       if (_allPassagesAvailable) {
+        print("✅ [BIBLE_APP_LOGGING] All passages available, navigating to home...");
         _goToHomeScreen();
       } else {
+        print("🟡 [BIBLE_APP_LOGGING] Passages not available, loading...");
         _loadPassages();
       }
     } else {
+      print("🟡 [BIBLE_APP_LOGGING] Showing language picker...");
       setState(() {
         _shouldShowPicker = true;
       });
@@ -101,32 +113,26 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
   }
 
   Future<void> _goToHomeScreen() async {
+    print("🚀 [BIBLE_APP_LOGGING] Navigating to HomeScreen...");
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
   }
 
   Future<void> _loadPassages() async {
+    print("🟢 [BIBLE_APP_LOGGING] START: _loadPassages()");
     setState(() => _isLoading = true);
+
     try {
       final result = await InternetAddress.lookup(RestClient.baseUrl);
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        PassagesRepo()
-            .loadAndCachePassages(_cachedLanguageCode!)
-            .then(
-              (_) => _goToHomeScreen(),
-            )
-            .onError(
-          (error, stackTrace) {
-            debugPrint(error.toString());
-            setState(() {
-              _isLoading = false;
-              _msg = error.toString();
-            });
+      print("✅ [BIBLE_APP_LOGGING] Internet check successful: $result");
 
-            throw Exception(error.toString());
-          },
-        );
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        print("🟢 [BIBLE_APP_LOGGING] Loading passages...");
+        await PassagesRepo().loadAndCachePassages(_cachedLanguageCode!);
+        print("✅ [BIBLE_APP_LOGGING] Passages loaded, navigating to home...");
+        _goToHomeScreen();
       }
     } catch (ex) {
+      print("❌ [BIBLE_APP_LOGGING] ERROR: Failed to load passages: $ex");
       setErrorState(ex);
     }
   }
