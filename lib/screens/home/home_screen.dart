@@ -10,6 +10,7 @@ import '../../app/widgets/app_text_title.dart';
 import '../../app/widgets/head_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 
+import '../../app_loger.dart';
 import '../../main.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -59,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       goToAndScroll();
     });
 
-    print(" [BIBLE_APP_LOGGING] 🏠 HomeScreen reached");
+    AppLogger.info(" 🏠 HomeScreen reached");
 
     return Scaffold(
       appBar: AppBar(
@@ -261,24 +262,31 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
     }
   }
 
-  void _initFromCacheOrDefault() {
+  void _initFromCacheOrDefault({int retryCount = 1}) async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+
+      AppLogger.info("🏠 _initFromCacheOrDefault reached");
 
       try {
         final fileNum = await loadFileNum(_defaultFileNum);
         final headIndex = await loadHeadIndex(_defaultHeadIndex);
         final textDiff = await loadTextSizeDiff(_defaultTextDiff);
-        final themeMode = await loadlightMode();
+        final themeMode = await loadLightMode();
 
         if (themeMode == ThemeMode.dark.name) {
           MyApp.themeNotifier.value = ThemeMode.dark;
         }
 
+        AppLogger.info(" 🏠 _initFromCacheOrDefault reached "
+            "fileNum$fileNum headIndex:$headIndex textDiff$textDiff themeModeL$themeMode");
+
         if (!mounted) return;
 
         final languageCode = AppLocalization.getCurrentLanguageCode(context);
         final newPassage = await loadPassage(context, fileNum, languageCode);
+
+        AppLogger.info("🏠 _initFromCacheOrDefault languageCode:$languageCode newPassage:${newPassage.title}");
 
         setState(() {
           _fileNum = fileNum;
@@ -289,7 +297,21 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
           _custTextSize = _calcualteTextSize(textDiff);
         });
       } catch (e, stackTrace) {
-        debugPrint("Error in _initFromCacheOrDefault: $e\n$stackTrace");
+        AppLogger.info(" ❌ Error loading passage (Attempt: $retryCount): $e\n$stackTrace");
+
+        if (retryCount < 2) {
+          AppLogger.info(" 🔄 Retrying passage load...");
+          await Future.delayed(const Duration(microseconds: 500));
+          _initFromCacheOrDefault(retryCount: retryCount + 1);
+        } else {
+          AppLogger.info(" ❌ Final failure - showing default passage.");
+
+          if (mounted) {
+            setState(() {
+              _passage = Passage(tr("something_wrong"), [tr("no_results")]);
+            });
+          }
+        }
       }
     });
   }
