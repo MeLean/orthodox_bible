@@ -8,7 +8,9 @@ plugins {
 android {
     namespace "bulgarian.orthodox.bible"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Prefer NDK r28+ for 16 KB alignment; falls back to Flutter's ndk if missing
+    def ndkProp = providers.gradleProperty("ndkVersion").orNull
+    ndkVersion = ndkProp ?: flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -21,7 +23,7 @@ android {
 
     defaultConfig {
         applicationId = "bulgarian.orthodox.bible"
-        minSdk = 23
+        minSdkVersion = flutter.minSdkVersion
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -40,6 +42,11 @@ android {
             }
         }
     }
+
+    packagingOptions {
+        jniLibs { useLegacyPackaging true }
+    }
+
 
     buildTypes {
         release {
