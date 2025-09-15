@@ -7,7 +7,7 @@ class AppThemes {
       secondary: Colors.white,
       tertiary: Colors.grey,
       onPrimary: Colors.black,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
     ),
     visualDensity: VisualDensity.adaptivePlatformDensity,
   );
@@ -18,7 +18,7 @@ class AppThemes {
       secondary: Colors.black,
       tertiary: Colors.grey,
       onPrimary: Colors.white,
-      brightness: Brightness.light,
+      brightness: Brightness.dark,
     ),
     visualDensity: VisualDensity.adaptivePlatformDensity,
   );

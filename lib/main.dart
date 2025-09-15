@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:bulgarian.orthodox.bible/app/mixins/cache.dart';
 import 'package:bulgarian.orthodox.bible/app_loger.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
