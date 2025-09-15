@@ -1,4 +1,3 @@
-// ignore: import_of_legacy_library_into_null_safe
 import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -223,7 +222,8 @@ class _SearchScreenState extends State<SearchScreen> with LoadingIndicatorProvid
   }
 
   _copyToClipboard(SearchResult result) {
-    Clipboard.setData(ClipboardData(text: result.text));
+    final toCopy = result.prityPrint();
+    Clipboard.setData(ClipboardData(text: toCopy));
     _showMessage(tr('done'), Colors.green[400]);
   }
 
