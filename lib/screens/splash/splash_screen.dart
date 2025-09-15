@@ -13,7 +13,7 @@ import 'package:easy_localization/easy_localization.dart';
 
 import '../../api/rest_client.dart';
 import '../../app/mixins/passage_manager.dart';
-import '../../app_loger.dart';
+import '../../app_logger.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);

@@ -10,7 +10,7 @@ import '../../app/widgets/app_text_title.dart';
 import '../../app/widgets/head_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-import '../../app_loger.dart';
+import '../../app_logger.dart';
 import '../../main.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -38,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   double _custTitleSize = _defaultTitleSize;
   int _fileNum = 1;
   int _headIndex = _defaultHeadIndex;
+  bool _isSwitchingFile = false;
 
   @override
   void initState() {
@@ -67,38 +68,60 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
         actions: _createActions,
       ),
       body: SafeArea(
-        child: GestureDetector(
-          onHorizontalDragEnd: (dragEndDetails) {
-            double velocity = dragEndDetails.primaryVelocity ?? 0;
+        child: Column(
+          children: [
+            TextTitle(
+              text: _passage?.title ?? '',
+              custFontSize: _custTitleSize,
+            ),
+            // ⬇️ NAVIGATION CHANGE STARTS HERE
+            Expanded(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (n) {
+                  if (_passage?.heads.isEmpty ?? true) return false;
+                  if (_isSwitchingFile) return false;
+                  if (n is! OverscrollNotification) return false;
 
-            if (velocity < 0) {
-              _getNextHead();
-            }
+                  final lastHead = _passage!.heads.length - 1;
 
-            if (velocity > 0) {
-              _getPreviusHead();
-            }
-          },
-          child: Column(
-            children: [
-              TextTitle(
-                text: _passage?.title ?? '',
-                custFontSize: _custTitleSize,
-              ),
-              Expanded(
+                  // overscroll forward (pulling past the end)
+                  if (n.overscroll > 0 && _headIndex == lastHead) {
+                    _isSwitchingFile = true;
+                    _calculateNextFileNum(); // returns void; just call it
+                    // release the guard on the next microtask so UI can update first
+                    Future.microtask(() => _isSwitchingFile = false);
+                    return true; // we handled it
+                  }
+
+                  // overscroll backward (pulling before the start)
+                  if (n.overscroll < 0 && _headIndex == _defaultHeadIndex) {
+                    _isSwitchingFile = true;
+                    _getPreviusHead(); // loads previous file & jumps to its last head
+                    Future.microtask(() => _isSwitchingFile = false);
+                    return true; // we handled it
+                  }
+
+                  return false;
+                },
                 child: PageView.builder(
-                    itemCount: _passage?.heads.length,
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemBuilder: (context, index) {
-                      return HeadPage(
-                        text: _passage?.heads[index] ?? '',
-                        custFontSize: _custTextSize,
-                      );
-                    }),
+                  controller: _pageController,
+                  physics: const PageScrollPhysics(), // ✅ native swipe
+                  itemCount: _passage?.heads.length ?? 0,
+                  onPageChanged: (index) {
+                    _headIndex = index;
+                    saveHeadIndex(_headIndex);
+                  },
+                  itemBuilder: (context, index) {
+                    return HeadPage(
+                      text: _passage?.heads[index] ?? '',
+                      custFontSize: _custTextSize,
+                    );
+                  },
+                ),
               ),
-            ],
-          ),
+            ),
+            // ⬆️ NAVIGATION CHANGE ENDS HERE
+          ],
         ),
       ),
     );
