@@ -5,6 +5,7 @@ class AppLocalization extends EasyLocalization {
   static const _appSupportedLocales = [
     Locale('bg', 'BG'),
     Locale('ka', 'GE'),
+    Locale('ru', 'RU'),
   ];
 
   static final appDefaultLocale = _appSupportedLocales.first;

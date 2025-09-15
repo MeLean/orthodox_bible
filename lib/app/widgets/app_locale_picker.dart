@@ -68,6 +68,8 @@ class AppLocalePicker extends StatelessWidget {
         return "Чети на Български";
       case "ka":
         return "წაიკითხეთ ქართულად";
+      case "ru":
+        return "Читать по-русски";
       default:
         return "Read in $curLocale";
     }

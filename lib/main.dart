@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:bulgarian.orthodox.bible/app/mixins/cache.dart';
 import 'package:bulgarian.orthodox.bible/app_loger.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -44,6 +46,13 @@ void main() {
       AppLogger.info("✅ Step 3: Firebase initialized successfully");
     } catch (e, stacktrace) {
       AppLogger.error("Step 3: Firebase initialization failed: $e\n$stacktrace");
+    }
+
+    try {
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+      FirebaseCrashlytics.instance.log("Crashlytics initialized OK");
+    } catch (e, stack) {
+      AppLogger.error("Crashlytics init failed: $e\n$stack");
     }
 
     AppLogger.info("🚀 Step 4: Running MyApp...");

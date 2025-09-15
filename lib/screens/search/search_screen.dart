@@ -43,27 +43,30 @@ class _SearchScreenState extends State<SearchScreen> with LoadingIndicatorProvid
         title: _buildSearchField(),
         actions: _buildActions(),
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                Visibility(
-                  visible: _searchResults.isEmpty && _searchQuery.isNotEmpty,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(child: Text(tr('no_results'))),
+      body: SafeArea(
+        top: false,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  Visibility(
+                    visible: _searchResults.isEmpty && _searchQuery.isNotEmpty,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Center(child: Text(tr('no_results'))),
+                    ),
                   ),
-                ),
-                _createResultsView(),
-              ],
+                  _createResultsView(),
+                ],
+              ),
             ),
-          ),
-          Visibility(
-            visible: _isLoading,
-            child: provideLoadingIndicator(context),
-          ),
-        ],
+            Visibility(
+              visible: _isLoading,
+              child: provideLoadingIndicator(context),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -40,27 +40,28 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
 
   @override
   Widget build(BuildContext context) {
+    var bottomPadding = 160.0;
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Stack(
           children: [
-            _createDataLoadingScreen(),
+            _createDataLoadingScreen(bottomPadding),
             _isLoading ? provideLoadingIndicator(context) : Container(),
-            _shouldShowPicker ? _provideLanguagePicker() : const SizedBox.shrink(),
+            _shouldShowPicker ? _provideLanguagePicker(bottomPadding) : const SizedBox.shrink(),
           ],
         ),
       ),
     );
   }
 
-  Widget _createDataLoadingScreen() {
+  Widget _createDataLoadingScreen(double bottomPadding) {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: 12.0,
+      padding: EdgeInsets.only(
+        top: 0,
         left: 24.0,
         right: 24.0,
-        bottom: 12.0,
+        bottom: bottomPadding,
       ),
       child: DecoratedBox(
         decoration: const BoxDecoration(
@@ -165,13 +166,13 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
     }
   }
 
-  Widget _provideLanguagePicker() {
+  Widget _provideLanguagePicker(double bottomPadding) {
     return Positioned(
       left: 8.0,
       right: 8.0,
       bottom: 8.0,
       child: SizedBox(
-        height: 160.0,
+        height: bottomPadding,
         width: MediaQuery.of(context).size.width,
         child: AppLocalePicker(
           supportedLocales: AppLocalization.getSupprotedLanguageCodes(),
