@@ -6,8 +6,6 @@ import '../../app/mixins/cache.dart';
 import '../../app/models/passage.dart';
 import '../../app/routes.dart';
 import '../../app/widgets/app_lcon_button.dart';
-import '../../app/widgets/app_text_title.dart';
-import '../../app/widgets/head_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 import '../../app_logger.dart';
@@ -30,8 +28,10 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   static const _defaultDuration = Duration(milliseconds: 500);
   static const _defaultCurve = Curves.ease;
   static const _defaultHeadIndex = 0;
+
   late PageController _pageController;
   final int _defaultFileNum = int.tryParse(tr("new_order_file_num_str")) ?? _startingFileNum;
+
   Passage? _passage;
   double _textDiff = _defaultTextDiff;
   double _custTextSize = _defaultTextSize;
@@ -68,60 +68,66 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
         actions: _createActions,
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            TextTitle(
-              text: _passage?.title ?? '',
-              custFontSize: _custTitleSize,
-            ),
-            // ⬇️ NAVIGATION CHANGE STARTS HERE
-            Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (n) {
-                  if (_passage?.heads.isEmpty ?? true) return false;
-                  if (_isSwitchingFile) return false;
-                  if (n is! OverscrollNotification) return false;
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (n) {
+            if (_passage?.heads.isEmpty ?? true) return false;
+            if (_isSwitchingFile) return false;
+            if (n is! OverscrollNotification) return false;
 
-                  final lastHead = _passage!.heads.length - 1;
+            final lastHead = _passage!.heads.length - 1;
 
-                  // overscroll forward (pulling past the end)
-                  if (n.overscroll > 0 && _headIndex == lastHead) {
-                    _isSwitchingFile = true;
-                    _calculateNextFileNum(); // returns void; just call it
-                    // release the guard on the next microtask so UI can update first
-                    Future.microtask(() => _isSwitchingFile = false);
-                    return true; // we handled it
-                  }
+            if (n.overscroll > 0 && _headIndex == lastHead) {
+              _isSwitchingFile = true;
+              _calculateNextFileNum();
+              Future.microtask(() => _isSwitchingFile = false);
+              return true;
+            }
 
-                  // overscroll backward (pulling before the start)
-                  if (n.overscroll < 0 && _headIndex == _defaultHeadIndex) {
-                    _isSwitchingFile = true;
-                    _getPreviusHead(); // loads previous file & jumps to its last head
-                    Future.microtask(() => _isSwitchingFile = false);
-                    return true; // we handled it
-                  }
-
-                  return false;
-                },
-                child: PageView.builder(
-                  controller: _pageController,
-                  physics: const PageScrollPhysics(), // ✅ native swipe
-                  itemCount: _passage?.heads.length ?? 0,
-                  onPageChanged: (index) {
-                    _headIndex = index;
-                    saveHeadIndex(_headIndex);
-                  },
-                  itemBuilder: (context, index) {
-                    return HeadPage(
-                      text: _passage?.heads[index] ?? '',
-                      custFontSize: _custTextSize,
-                    );
-                  },
+            if (n.overscroll < 0 && _headIndex == _defaultHeadIndex) {
+              _isSwitchingFile = true;
+              _getPreviusHead();
+              Future.microtask(() => _isSwitchingFile = false);
+              return true;
+            }
+            return false;
+          },
+          child: PageView.builder(
+            controller: _pageController,
+            physics: const PageScrollPhysics(),
+            itemCount: _passage?.heads.length ?? 0,
+            onPageChanged: (index) {
+              _headIndex = index;
+              saveHeadIndex(_headIndex);
+            },
+            itemBuilder: (context, index) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      _passage?.title ?? '',
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: _custTitleSize,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _passage?.heads[index] ?? '',
+                      style: TextStyle(
+                        fontSize: _custTextSize,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
-            // ⬆️ NAVIGATION CHANGE ENDS HERE
-          ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -170,26 +176,27 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
         disableAfterClick: _defaultDuration,
       ),
       PopupMenuButton(
-          offset: const Offset(0, kToolbarHeight),
-          itemBuilder: (_) => [
-                PopupMenuItem(
-                  onTap: () {
-                    MyApp.themeNotifier.value =
-                        MyApp.themeNotifier.value == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-                    saveLightMode(MyApp.themeNotifier.value.name);
-                  },
-                  child: MenuItem(
-                    text: MyApp.themeNotifier.value == ThemeMode.dark ? tr('go_light') : tr('go_dark'),
-                    icon: MyApp.themeNotifier.value == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
-                    tint: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                ),
-              ]),
+        offset: const Offset(0, kToolbarHeight),
+        itemBuilder: (_) => [
+          PopupMenuItem(
+            onTap: () {
+              MyApp.themeNotifier.value =
+                  MyApp.themeNotifier.value == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+              saveLightMode(MyApp.themeNotifier.value.name);
+            },
+            child: MenuItem(
+              text: MyApp.themeNotifier.value == ThemeMode.dark ? tr('go_light') : tr('go_dark'),
+              icon: MyApp.themeNotifier.value == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
+              tint: Theme.of(context).colorScheme.onPrimary,
+            ),
+          ),
+        ],
+      ),
     ];
   }
 
   void _increaseTextsize() {
-    if (_custTextSize <= _maxTextSize) {
+    if (_custTextSize < _maxTextSize) {
       saveDiffSize(_textDiff += 2);
       setState(() {
         _custTextSize = _calcualteTextSize(_textDiff);
@@ -199,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   }
 
   void _decreseTextsize() {
-    if (_custTextSize >= _minTextSize) {
+    if (_custTextSize > _minTextSize) {
       saveDiffSize(_textDiff -= 2);
       setState(() {
         _custTextSize = _calcualteTextSize(_textDiff);
@@ -209,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   }
 
   void _getNextHead() {
-    int pasageLenght = _passage?.heads.length != null ? _passage!.heads.length : 1 << 63;
+    final pasageLenght = _passage?.heads.length != null ? _passage!.heads.length : 1 << 63;
 
     if (_headIndex < pasageLenght - 1) {
       _pageController.nextPage(
@@ -260,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   }
 
   void _calculateNextFileNum() async {
-    int maxNum = maxFileNum();
+    final maxNum = maxFileNum();
 
     if (_fileNum < PassageManager.minFileNum || _fileNum >= maxNum) {
       final passage = await loadPassage(
