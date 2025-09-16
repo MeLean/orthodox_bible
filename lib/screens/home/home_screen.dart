@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   int _fileNum = 1;
   int _headIndex = _defaultHeadIndex;
   bool _isSwitchingFile = false;
+  bool _animateNextPage = true;
 
   @override
   void initState() {
@@ -135,11 +136,16 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
 
   void goToAndScroll() async {
     if (_passage?.heads.isNotEmpty == true) {
-      await _pageController.animateToPage(
-        _headIndex,
-        duration: _defaultDuration,
-        curve: _defaultCurve,
-      );
+      if (_animateNextPage) {
+        await _pageController.animateToPage(
+          _headIndex,
+          duration: _defaultDuration,
+          curve: _defaultCurve,
+        );
+      } else {
+        _pageController.jumpToPage(_headIndex);
+        _animateNextPage = true; // restore for normal head changes
+      }
     }
   }
 
@@ -262,6 +268,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
         _fileNum = fileNum;
         _headIndex = headIndex;
         _passage = passage;
+        _animateNextPage = false;
       });
     }
   }
