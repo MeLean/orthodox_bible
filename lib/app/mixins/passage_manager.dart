@@ -49,7 +49,7 @@ mixin PassageManager {
   Future<List<Passage>> loadAllPassages(BuildContext context) async {
     List<Passage> result = [];
     int maxNum = maxFileNum();
-    String appLocale = AppLocalization.getCurrentLanguageCode(context);
+    String appLocale = AppLocalization.getLanguageCode(context);
 
     for (int i = minFileNum; i <= maxNum; i++) {
       result.add(await loadPassage(context, i, appLocale));

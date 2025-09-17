@@ -258,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
         final passage = await loadPassage(
           context,
           fileNum,
-          AppLocalization.getCurrentLanguageCode(context),
+          AppLocalization.getLanguageCode(context),
         );
         final headIndex = passage.heads.length - 1;
 
@@ -288,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       final passage = await loadPassage(
         context,
         PassageManager.minFileNum,
-        AppLocalization.getCurrentLanguageCode(context),
+        AppLocalization.getLanguageCode(context),
       );
 
       _cacheAndUpdate(PassageManager.minFileNum, _defaultHeadIndex, passage);
@@ -300,7 +300,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       final passage = await loadPassage(
         context,
         fileNum,
-        AppLocalization.getCurrentLanguageCode(context),
+        AppLocalization.getLanguageCode(context),
       );
 
       _cacheAndUpdate(fileNum, _defaultHeadIndex, passage);
@@ -328,7 +328,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
 
         if (!mounted) return;
 
-        final languageCode = AppLocalization.getCurrentLanguageCode(context);
+        final languageCode = AppLocalization.getLanguageCode(context);
         final newPassage = await loadPassage(context, fileNum, languageCode);
 
         AppLogger.info("🏠 _initFromCacheOrDefault languageCode:$languageCode newPassage:${newPassage.title}");

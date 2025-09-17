@@ -36,7 +36,7 @@ class AppLocalization extends EasyLocalization {
     return await context.setLocale(locale);
   }
 
-  static String getCurrentLanguageCode(BuildContext context) {
+  static String getLanguageCode(BuildContext context) {
     return Localizations.localeOf(context).languageCode;
   }
 
