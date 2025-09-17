@@ -10,14 +10,14 @@ import 'package:bulgarian.orthodox.bible/screens/search/search_result.dart';
 
 import '../../app/models/passage.dart';
 
-class SearchScreen extends StatefulWidget {
-  const SearchScreen({Key? key}) : super(key: key);
+class SearchTextsScreen extends StatefulWidget {
+  const SearchTextsScreen({Key? key}) : super(key: key);
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  State<SearchTextsScreen> createState() => _SearchTextsScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with LoadingIndicatorProvider, PassageManager, AppCache {
+class _SearchTextsScreenState extends State<SearchTextsScreen> with LoadingIndicatorProvider, PassageManager, AppCache {
   final TextEditingController _searchQueryController = TextEditingController();
   static const int _minSearchLenght = 3;
   bool _isLoading = true;

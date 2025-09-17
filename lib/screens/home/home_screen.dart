@@ -178,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       ),
       AppIconButton(
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.search),
-        icon: const Icon(Icons.navigation_outlined),
+        icon: const Icon(Icons.manage_search),
         disableAfterClick: _defaultDuration,
       ),
       PopupMenuButton(
@@ -193,6 +193,14 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
             child: MenuItem(
               text: MyApp.themeNotifier.value == ThemeMode.dark ? tr('go_light') : tr('go_dark'),
               icon: MyApp.themeNotifier.value == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
+              tint: Theme.of(context).colorScheme.onPrimary,
+            ),
+          ),
+          PopupMenuItem(
+            onTap: () => Navigator.of(context).pushNamed(AppRoutes.navigator),
+            child: MenuItem(
+              text: tr('navigate_by_head'),
+              icon: Icons.navigation_outlined,
               tint: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
