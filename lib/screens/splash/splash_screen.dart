@@ -1,18 +1,18 @@
+// lib/screens/splash/splash_screen.dart
 import 'dart:io';
 import 'dart:ui';
 
 import 'package:bulgarian.orthodox.bible/app/localization.dart';
 import 'package:bulgarian.orthodox.bible/app/mixins/cache.dart';
 import 'package:bulgarian.orthodox.bible/app/mixins/loading.dart';
+import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart'; // ✅ back
 import 'package:bulgarian.orthodox.bible/app/routes.dart';
 import 'package:bulgarian.orthodox.bible/app/widgets/app_locale_picker.dart';
 import 'package:bulgarian.orthodox.bible/screens/splash/pasages_repo.dart';
 import 'package:flutter/material.dart';
-
 import 'package:easy_localization/easy_localization.dart';
 
 import '../../api/rest_client.dart';
-import '../../app/mixins/passage_manager.dart';
 import '../../app_logger.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -23,6 +23,7 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with PassageManager, LoadingIndicatorProvider, AppCache {
+  // ✅ PassageManager restored
   bool _shouldShowPicker = false;
   bool _allPassagesAvailable = false;
   bool _isLoading = false;
@@ -43,11 +44,9 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
       body: SafeArea(
         child: Stack(
           children: [
-            // MAIN LAYOUT
             Column(
               children: [
-                // 1) The cross image area takes all remaining space,
-                //    keeps aspect via BoxFit.contain on black bg.
+                // Cross image area (keeps ratio on black background)
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -56,8 +55,8 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
                         color: Colors.black,
                         image: DecorationImage(
                           image: AssetImage('assets/images/orthodox_cross.png'),
-                          fit: BoxFit.contain, // 👈 keeps aspect ratio
-                          alignment: Alignment.center, // 👈 centered
+                          fit: BoxFit.contain,
+                          alignment: Alignment.center,
                         ),
                       ),
                       child: Align(
@@ -68,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
                   ),
                 ),
 
-                // 2) Language picker shows naturally (no fixed height).
+                // Language picker (wraps naturally, no hardcoded height)
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   child: _shouldShowPicker
@@ -77,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
                           child: AppLocalePicker(
                             supportedLocales: AppLocalization.getSupprotedLanguageCodes(),
                             localePickedCallback: (String languageCode) {
-                              _setLocaleAndLoadPassages(languageCode);
+                              _onLocalePicked(languageCode);
                             },
                           ),
                         )
@@ -85,8 +84,6 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
                 ),
               ],
             ),
-
-            // 3) Loading overlay (kept as before).
             if (_isLoading) provideLoadingIndicator(context),
           ],
         ),
@@ -94,9 +91,9 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
     );
   }
 
-  // ----------------- logic below unchanged except where noted -----------------
+  // ---------------- lifecycle / flow ----------------
 
-  void _initApp() async {
+  Future<void> _initApp() async {
     AppLogger.info("START: _initApp()");
 
     try {
@@ -107,40 +104,54 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
     }
 
     if (_cachedLanguageCode == null) {
-      AppLogger.info("Language code is null, checking locale support...");
-      _checkIfUserLocaleSupported();
+      AppLogger.info("Language code is null, checking device locale...");
+      final deviceCode = PlatformDispatcher.instance.locale.languageCode;
+      if (AppLocalization.isLanguageCodeSupported(deviceCode)) {
+        _cachedLanguageCode = deviceCode;
+        await saveLanguageCode(deviceCode);
+        AppLogger.info("✅ Adopted device locale: $deviceCode");
+      } else {
+        setState(() => _shouldShowPicker = true);
+        return; // stop flow until user picks
+      }
     }
 
-    _allPassagesAvailable = await arePassagesLoaded(_cachedLanguageCode);
-    AppLogger.info("Passages available: $_allPassagesAvailable");
-
-    _updateUiState();
+    // We have a language → continue once
+    await _continueInit();
   }
 
-  void _updateUiState() async {
-    AppLogger.info("START: _updateUiState()");
+  Future<void> _continueInit() async {
+    _allPassagesAvailable = await arePassagesLoaded(_cachedLanguageCode); // ✅ now resolves
+    AppLogger.info("Passages available: $_allPassagesAvailable");
 
-    if (_cachedLanguageCode != null) {
-      AppLogger.info("Applying locale: $_cachedLanguageCode");
-      await AppLocalization.applyLocaleByLanguageCodeOrDefault(context, _cachedLanguageCode!);
+    AppLogger.info("Applying locale: $_cachedLanguageCode");
+    await AppLocalization.applyLocaleByLanguageCodeOrDefault(
+      context,
+      _cachedLanguageCode!,
+    );
 
-      if (_allPassagesAvailable) {
-        AppLogger.info("✅ All passages available, navigating to home...");
-        _goToHomeScreen();
-      } else {
-        AppLogger.info("Passages not available, loading...");
-        _loadPassages();
-      }
+    if (_allPassagesAvailable) {
+      AppLogger.info("✅ All passages available, navigating to home...");
+      _goToHomeScreen();
     } else {
-      AppLogger.info("Showing language picker...");
-      setState(() {
-        _shouldShowPicker = true;
-      });
+      AppLogger.info("Passages not available, loading...");
+      await _loadPassages();
     }
+  }
+
+  Future<void> _onLocalePicked(String languageCode) async {
+    await saveLanguageCode(languageCode);
+    setState(() {
+      _cachedLanguageCode = languageCode;
+      _isLoading = true;
+      _shouldShowPicker = false;
+    });
+    await _continueInit(); // single, linear flow
   }
 
   Future<void> _goToHomeScreen() async {
     AppLogger.info("🚀 Navigating to HomeScreen...");
+    if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
   }
 
@@ -156,13 +167,17 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
         AppLogger.info("Loading passages...");
         await PassagesRepo().loadAndCachePassages(_cachedLanguageCode!);
         AppLogger.info("Passages loaded, navigating to home...");
-        _goToHomeScreen();
+        await _goToHomeScreen();
       }
     } catch (ex) {
-      AppLogger.error("_initApp()] ERROR: Failed to load passages: $ex");
+      AppLogger.error("_loadPassages() ERROR: $ex");
       setErrorState(ex);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  // ---------------- errors / UI helpers ----------------
 
   void setErrorState(Object ex) {
     setState(() {
@@ -177,36 +192,13 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
         padding: const EdgeInsets.all(8.0),
         child: ElevatedButton(
           onPressed: _loadPassages,
-          child: const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Text(
-              // keep it short to avoid overflow here
-              // (longer text will wrap inside the button)
-              '',
-              textAlign: TextAlign.center,
-            ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(_msg, textAlign: TextAlign.center),
           ),
         ),
       );
-    } else {
-      return const SizedBox.shrink();
     }
-  }
-
-  void _checkIfUserLocaleSupported() {
-    var languageCode = PlatformDispatcher.instance.locale.languageCode;
-    if (AppLocalization.isLanguageCodeSupported(languageCode)) {
-      _setLocaleAndLoadPassages(languageCode);
-    }
-  }
-
-  void _setLocaleAndLoadPassages(String languageCode) async {
-    saveLanguageCode(languageCode);
-    setState(() {
-      _cachedLanguageCode = languageCode;
-      _isLoading = true;
-    });
-
-    _updateUiState();
+    return const SizedBox.shrink();
   }
 }
