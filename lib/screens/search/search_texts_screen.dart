@@ -8,6 +8,7 @@ import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart';
 import 'package:bulgarian.orthodox.bible/app/routes.dart';
 import 'package:bulgarian.orthodox.bible/screens/search/search_result.dart';
 import '../../app/models/passage.dart';
+import 'search_details_screen.dart';
 
 class SearchTextsScreen extends StatefulWidget {
   const SearchTextsScreen({Key? key}) : super(key: key);
@@ -290,11 +291,11 @@ class _SearchTextsScreenState extends State<SearchTextsScreen> with PassageManag
 
   // ==================== Navigation + helpers ====================
 
-  _goTo(int num, {int headIndex = 0}) async {
-    await saveFileNum(num);
-    await saveHeadIndex(headIndex);
-    if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+  void _openDetails(Passage passage, int headIndex) {
+    Navigator.of(context).pushNamed(
+      AppRoutes.searchDetails,
+      arguments: SearchDetailsArgs(passage: passage, headIndex: headIndex),
+    );
   }
 
   int _calculateNum(String item) {
@@ -337,7 +338,10 @@ class _SearchTextsScreenState extends State<SearchTextsScreen> with PassageManag
               style: ListTileStyle.drawer,
               title: Text(passageTitle),
               trailing: InkWell(
-                onTap: () => _goTo(num),
+                onTap: () {
+                  final passage = _passageList[num - 1];
+                  _openDetails(passage, 0);
+                },
                 child: Text(tr('go_there')),
               ),
             );
@@ -362,7 +366,10 @@ class _SearchTextsScreenState extends State<SearchTextsScreen> with PassageManag
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 InkWell(
-                  onTap: () => _goTo(num, headIndex: result.headIndex),
+                  onTap: () {
+                    final passage = _passageList[num - 1];
+                    _openDetails(passage, 0);
+                  },
                   child: Text(tr('go_there')),
                 ),
                 InkWell(

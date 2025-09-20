@@ -2,6 +2,7 @@ import 'package:bulgarian.orthodox.bible/app/localization.dart';
 import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart';
 import 'package:flutter/material.dart';
 
+import '../../app/constants.dart';
 import '../../app/mixins/cache.dart';
 import '../../app/models/passage.dart';
 import '../../app/routes.dart';
@@ -19,12 +20,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
-  static const _maxTextSize = 36;
-  static const _minTextSize = 12;
+  static const _maxTextSize = Constants.maxTextSize;
+  static const _minTextSize = Constants.minTextSize;
   static const _startingFileNum = 1;
-  static const _defaultTextSize = 16.0;
-  static const _defaultTitleSize = 18.0;
-  static const _defaultTextDiff = 0.0;
+  static const _defaultTextSize = Constants.defaultTextSize;
+  static const _defaultTitleSize = Constants.defaultTitleSize;
+  static const _defaultTextDiff = Constants.defaultTextDiff;
   static const _defaultDuration = Duration(milliseconds: 500);
   static const _defaultCurve = Curves.ease;
   static const _defaultHeadIndex = 0;
