@@ -33,47 +33,68 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initApp();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initApp());
   }
 
   @override
   Widget build(BuildContext context) {
-    var bottomPadding = 160.0;
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Stack(
           children: [
-            _createDataLoadingScreen(bottomPadding),
-            _isLoading ? provideLoadingIndicator(context) : Container(),
-            _shouldShowPicker ? _provideLanguagePicker(bottomPadding) : const SizedBox.shrink(),
+            // MAIN LAYOUT
+            Column(
+              children: [
+                // 1) The cross image area takes all remaining space,
+                //    keeps aspect via BoxFit.contain on black bg.
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        color: Colors.black,
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/orthodox_cross.png'),
+                          fit: BoxFit.contain, // 👈 keeps aspect ratio
+                          alignment: Alignment.center, // 👈 centered
+                        ),
+                      ),
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: _showButtonIfNeeded(),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 2) Language picker shows naturally (no fixed height).
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: _shouldShowPicker
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(8.0, 12.0, 8.0, 8.0),
+                          child: AppLocalePicker(
+                            supportedLocales: AppLocalization.getSupprotedLanguageCodes(),
+                            localePickedCallback: (String languageCode) {
+                              _setLocaleAndLoadPassages(languageCode);
+                            },
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
+
+            // 3) Loading overlay (kept as before).
+            if (_isLoading) provideLoadingIndicator(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _createDataLoadingScreen(double bottomPadding) {
-    return Padding(
-      padding: EdgeInsets.only(
-        top: 0,
-        left: 24.0,
-        right: 24.0,
-        bottom: bottomPadding,
-      ),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/orthodox_cross.png'),
-            fit: BoxFit.fitWidth,
-          ),
-        ),
-        child: Align(alignment: FractionalOffset.bottomCenter, child: _showButtonIfNeeded()),
-      ),
-    );
-  }
+  // ----------------- logic below unchanged except where noted -----------------
 
   void _initApp() async {
     AppLogger.info("START: _initApp()");
@@ -155,33 +176,21 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
       return Padding(
         padding: const EdgeInsets.all(8.0),
         child: ElevatedButton(
-            onPressed: () => _loadPassages(),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(_msg, textAlign: TextAlign.center),
-            )),
+          onPressed: _loadPassages,
+          child: const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text(
+              // keep it short to avoid overflow here
+              // (longer text will wrap inside the button)
+              '',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
       );
     } else {
-      return Container();
+      return const SizedBox.shrink();
     }
-  }
-
-  Widget _provideLanguagePicker(double bottomPadding) {
-    return Positioned(
-      left: 8.0,
-      right: 8.0,
-      bottom: 8.0,
-      child: SizedBox(
-        height: bottomPadding,
-        width: MediaQuery.of(context).size.width,
-        child: AppLocalePicker(
-          supportedLocales: AppLocalization.getSupprotedLanguageCodes(),
-          localePickedCallback: (String languageCode) {
-            _setLocaleAndLoadPassages(languageCode);
-          },
-        ),
-      ),
-    );
   }
 
   void _checkIfUserLocaleSupported() {
