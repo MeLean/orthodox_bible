@@ -97,8 +97,6 @@ class _SearchTextsScreenState extends State<SearchTextsScreen> with PassageManag
                               (q) => InputChip(
                                 label: Text(q),
                                 onPressed: () => _onHistoryTap(q, runNow: true),
-                                deleteIcon: const Icon(Icons.delete_outline),
-                                onDeleted: () => _removeFromHistory(q),
                               ),
                             )
                             .toList(),
@@ -188,15 +186,6 @@ class _SearchTextsScreenState extends State<SearchTextsScreen> with PassageManag
     await _saveHistory(list);
     if (!mounted) return;
     setState(() => _history = List.unmodifiable(list));
-  }
-
-  Future<void> _removeFromHistory(String query) async {
-    final list = List<String>.from(_history);
-    list.removeWhere((e) => e == query);
-    await _saveHistory(list);
-    if (!mounted) return;
-    setState(() => _history = List.unmodifiable(list));
-    _showMessage(tr('done'), Colors.green[400]);
   }
 
   Future<void> _clearHistory() async {
