@@ -76,21 +76,25 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
             if (_isSwitchingFile) return false;
             if (n is! OverscrollNotification) return false;
 
-            final lastHead = _passage!.heads.length - 1;
+            // Only react to horizontal overscrolls from PageView
+            if (n.metrics.axisDirection == AxisDirection.left || n.metrics.axisDirection == AxisDirection.right) {
+              final lastHead = _passage!.heads.length - 1;
 
-            if (n.overscroll > 0 && _headIndex == lastHead) {
-              _isSwitchingFile = true;
-              _calculateNextFileNum();
-              Future.microtask(() => _isSwitchingFile = false);
-              return true;
+              if (n.overscroll > 0 && _headIndex == lastHead) {
+                _isSwitchingFile = true;
+                _calculateNextFileNum();
+                Future.microtask(() => _isSwitchingFile = false);
+                return true;
+              }
+
+              if (n.overscroll < 0 && _headIndex == _defaultHeadIndex) {
+                _isSwitchingFile = true;
+                _getPreviusHead();
+                Future.microtask(() => _isSwitchingFile = false);
+                return true;
+              }
             }
 
-            if (n.overscroll < 0 && _headIndex == _defaultHeadIndex) {
-              _isSwitchingFile = true;
-              _getPreviusHead();
-              Future.microtask(() => _isSwitchingFile = false);
-              return true;
-            }
             return false;
           },
           child: PageView.builder(
