@@ -20,27 +20,30 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
+  // ---- Config ----
   static const _maxTextSize = Constants.maxTextSize;
   static const _minTextSize = Constants.minTextSize;
   static const _startingFileNum = 1;
   static const _defaultTextSize = Constants.defaultTextSize;
   static const _defaultTitleSize = Constants.defaultTitleSize;
   static const _defaultTextDiff = Constants.defaultTextDiff;
-  static const _defaultDuration = Duration(milliseconds: 500);
-  static const _defaultCurve = Curves.ease;
+  static const _defaultDuration = Duration(milliseconds: 400);
+  static const _defaultCurve = Curves.easeOutCubic;
   static const _defaultHeadIndex = 0;
 
-  late PageController _pageController;
+  // ---- State ----
+  late final PageController _pageController;
   final int _defaultFileNum = int.tryParse(tr("new_order_file_num_str")) ?? _startingFileNum;
 
   Passage? _passage;
   double _textDiff = _defaultTextDiff;
   double _custTextSize = _defaultTextSize;
   double _custTitleSize = _defaultTitleSize;
-  int _fileNum = 1;
+  int _fileNum = _startingFileNum;
   int _headIndex = _defaultHeadIndex;
-  bool _isSwitchingPage = false;
-  bool _animateNextPage = true;
+
+  // guards
+  bool _isSwitchingPage = false; // serialize page/file switches
 
   @override
   void initState() {
@@ -59,11 +62,10 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      goToAndScroll();
-    });
+    // Keep controller aligned with current head (single owner for movement)
+    WidgetsBinding.instance.addPostFrameCallback((_) => _alignController());
 
-    AppLogger.info(" 🏠 HomeScreen reached");
+    AppLogger.info(" 🏠 HomeScreen build");
 
     return Scaffold(
       appBar: AppBar(
@@ -76,22 +78,21 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
             if (_isSwitchingPage) return false;
             if (n is! OverscrollNotification) return false;
 
-            if (n.metrics.axisDirection == AxisDirection.left || n.metrics.axisDirection == AxisDirection.right) {
-              final lastHead = _passage!.heads.length - 1;
+            // Only react to HORIZONTAL overscrolls (from PageView)
+            final axis = n.metrics.axisDirection;
+            final isHorizontal = axis == AxisDirection.left || axis == AxisDirection.right;
+            if (!isHorizontal) return false;
 
-              if (n.overscroll > 0 && _headIndex == lastHead) {
-                _isSwitchingPage = true;
-                _calculateNextFileNum();
-                Future.microtask(() => _isSwitchingPage = false);
-                return true;
-              }
+            final lastHead = _passage!.heads.length - 1;
 
-              if (n.overscroll < 0 && _headIndex == _defaultHeadIndex) {
-                _isSwitchingPage = true;
-                _getPreviusHead();
-                Future.microtask(() => _isSwitchingPage = false);
-                return true;
-              }
+            if (n.overscroll > 0 && _headIndex == lastHead) {
+              _guardedSwitch(() async => _calculateNextFileNum());
+              return true;
+            }
+
+            if (n.overscroll < 0 && _headIndex == _defaultHeadIndex) {
+              _guardedSwitch(() async => _getPreviusHead());
+              return true;
             }
 
             return false;
@@ -138,21 +139,31 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
     );
   }
 
-  void goToAndScroll() async {
-    if (_passage?.heads.isNotEmpty == true) {
-      if (_animateNextPage) {
-        await _pageController.animateToPage(
-          _headIndex,
-          duration: _defaultDuration,
-          curve: _defaultCurve,
-        );
-      } else {
-        _pageController.jumpToPage(_headIndex);
-        _animateNextPage = true; // restore for normal head changes
-      }
+  // --- Controller alignment: single place in charge of moving pages (always animate) ---
+  Future<void> _alignController() async {
+    if (!mounted) return;
+    final hasItems = _passage?.heads.isNotEmpty ?? false;
+    if (!hasItems) return;
+    if (!_pageController.hasClients) return;
+
+    // Avoid fighting with user drag
+    if (_pageController.position.isScrollingNotifier.value) return;
+
+    final currentPage = _pageController.page?.round();
+    if (currentPage == _headIndex) return;
+
+    try {
+      await _pageController.animateToPage(
+        _headIndex,
+        duration: _defaultDuration,
+        curve: _defaultCurve,
+      );
+    } catch (_) {
+      // ignore if detached
     }
   }
 
+  // ---- UI actions ----
   List<Widget> get _createActions {
     return [
       AppIconButton(
@@ -161,22 +172,22 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
         disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
-        onPressed: () => _getPreviusHead(),
+        onPressed: _safePrevHeadTap,
         icon: const Icon(Icons.arrow_back),
         disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
-        onPressed: () => _getNextHead(),
+        onPressed: _safeNextHeadTap,
         icon: const Icon(Icons.arrow_forward),
         disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
-        onPressed: () => _increaseTextsize(),
+        onPressed: _increaseTextsize,
         icon: const Icon(Icons.add),
         disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
-        onPressed: () => _decreseTextsize(),
+        onPressed: _decreseTextsize,
         icon: const Icon(Icons.remove),
         disableAfterClick: _defaultDuration,
       ),
@@ -213,10 +224,13 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
     ];
   }
 
+  // ---- Text size ----
   void _increaseTextsize() {
     if (_custTextSize < _maxTextSize) {
-      saveDiffSize(_textDiff += 2);
+      final newDiff = _textDiff + 2;
+      saveDiffSize(newDiff);
       setState(() {
+        _textDiff = newDiff;
         _custTextSize = _calcualteTextSize(_textDiff);
         _custTitleSize = _calculateTitleSize(_textDiff);
       });
@@ -225,67 +239,110 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
 
   void _decreseTextsize() {
     if (_custTextSize > _minTextSize) {
-      saveDiffSize(_textDiff -= 2);
+      final newDiff = _textDiff - 2;
+      saveDiffSize(newDiff);
       setState(() {
+        _textDiff = newDiff;
         _custTextSize = _calcualteTextSize(_textDiff);
         _custTitleSize = _calculateTitleSize(_textDiff);
       });
     }
   }
 
-  void _getNextHead() {
-    final pasageLenght = _passage?.heads.length != null ? _passage!.heads.length : 1 << 63;
-
-    if (_headIndex < pasageLenght - 1) {
-      _pageController.nextPage(
-        duration: _defaultDuration,
-        curve: _defaultCurve,
-      );
-      _headIndex += 1;
-      saveHeadIndex(_headIndex);
-    } else {
-      _calculateNextFileNum();
-    }
+  // ---- Navigation (serialize + await animations) ----
+  Future<void> _safeNextHeadTap() async {
+    await _guardedSwitch(() async => _getNextHead());
   }
 
-  void _getPreviusHead() async {
-    if (_headIndex > _defaultHeadIndex) {
-      _pageController.previousPage(
-        duration: _defaultDuration,
-        curve: _defaultCurve,
-      );
-      _headIndex -= 1;
-      saveHeadIndex(_headIndex);
-    } else {
-      if (_fileNum > _startingFileNum) {
-        final fileNum = _fileNum - 1;
-        final passage = await loadPassage(
-          context,
-          fileNum,
-          AppLocalization.getLanguageCode(context),
-        );
-        final headIndex = passage.heads.length - 1;
+  Future<void> _safePrevHeadTap() async {
+    await _guardedSwitch(() async => _getPreviusHead());
+  }
 
-        _cacheAndUpdate(fileNum, headIndex, passage);
+  Future<void> _guardedSwitch(Future<void> Function() action) async {
+    if (_isSwitchingPage) return;
+    _isSwitchingPage = true;
+    try {
+      // If dragging, wait a tick to avoid fighting with gesture
+      if (_pageController.hasClients && _pageController.position.isScrollingNotifier.value) {
+        await Future<void>.delayed(const Duration(milliseconds: 16));
       }
+      await action();
+    } finally {
+      _isSwitchingPage = false;
     }
   }
 
-  void _cacheAndUpdate(int fileNum, int headIndex, Passage passage) async {
+  Future<void> _getNextHead() async {
+    final passageLength = _passage?.heads.length ?? 0;
+    if (passageLength == 0) return;
+
+    if (_headIndex < passageLength - 1) {
+      if (_pageController.hasClients) {
+        await _pageController.animateToPage(
+          _headIndex + 1,
+          duration: _defaultDuration,
+          curve: _defaultCurve,
+        );
+      }
+      _headIndex += 1;
+      await saveHeadIndex(_headIndex);
+      setState(() {}); // reflect toolbar/back/forward availability
+    } else {
+      await _calculateNextFileNum();
+    }
+  }
+
+  Future<void> _getPreviusHead() async {
+    if (_headIndex > _defaultHeadIndex) {
+      if (_pageController.hasClients) {
+        await _pageController.animateToPage(
+          _headIndex - 1,
+          duration: _defaultDuration,
+          curve: _defaultCurve,
+        );
+      }
+      _headIndex -= 1;
+      await saveHeadIndex(_headIndex);
+      setState(() {});
+    } else if (_fileNum > _startingFileNum) {
+      final fileNum = _fileNum - 1;
+      final passage = await loadPassage(
+        context,
+        fileNum,
+        AppLocalization.getLanguageCode(context),
+      );
+      final headIndex = passage.heads.isNotEmpty ? passage.heads.length - 1 : 0;
+      await _cacheAndUpdate(fileNum, headIndex, passage);
+    }
+  }
+
+  Future<void> _cacheAndUpdate(int fileNum, int headIndex, Passage passage) async {
     await saveFileNum(fileNum);
     await saveHeadIndex(headIndex);
 
-    if (mounted) {
-      setState(() {
-        _fileNum = fileNum;
-        _headIndex = headIndex;
-        _passage = passage;
-        _animateNextPage = false;
-      });
-    }
+    if (!mounted) return;
+
+    setState(() {
+      _fileNum = fileNum;
+      _headIndex = headIndex.clamp(0, (passage.heads.length - 1).clamp(0, 1 << 30));
+      _passage = passage;
+    });
+
+    // Animate to the new head after the PageView reattaches
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (!_pageController.hasClients) return;
+      try {
+        await _pageController.animateToPage(
+          _headIndex,
+          duration: _defaultDuration,
+          curve: _defaultCurve,
+        );
+      } catch (_) {}
+    });
   }
 
-  void _calculateNextFileNum() async {
+  Future<void> _calculateNextFileNum() async {
     final maxNum = maxFileNum();
 
     if (_fileNum < PassageManager.minFileNum || _fileNum >= maxNum) {
@@ -294,8 +351,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
         PassageManager.minFileNum,
         AppLocalization.getLanguageCode(context),
       );
-
-      _cacheAndUpdate(PassageManager.minFileNum, _defaultHeadIndex, passage);
+      await _cacheAndUpdate(PassageManager.minFileNum, _defaultHeadIndex, passage);
       return;
     }
 
@@ -306,12 +362,11 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
         fileNum,
         AppLocalization.getLanguageCode(context),
       );
-
-      _cacheAndUpdate(fileNum, _defaultHeadIndex, passage);
+      await _cacheAndUpdate(fileNum, _defaultHeadIndex, passage);
     }
   }
 
-  void _initFromCacheOrDefault({int retryCount = 1}) async {
+  void _initFromCacheOrDefault({int retryCount = 1}) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
 
@@ -327,19 +382,18 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
           MyApp.themeNotifier.value = ThemeMode.dark;
         }
 
-        AppLogger.info(" 🏠 _initFromCacheOrDefault reached "
-            "fileNum$fileNum headIndex:$headIndex textDiff$textDiff themeModeL$themeMode");
-
         if (!mounted) return;
 
         final languageCode = AppLocalization.getLanguageCode(context);
         final newPassage = await loadPassage(context, fileNum, languageCode);
 
-        AppLogger.info("🏠 _initFromCacheOrDefault languageCode:$languageCode newPassage:${newPassage.title}");
+        AppLogger.info(
+          "🏠 initFromCache lang:$languageCode title:${newPassage.title} file:$fileNum head:$headIndex",
+        );
 
         setState(() {
           _fileNum = fileNum;
-          _headIndex = headIndex;
+          _headIndex = (headIndex).clamp(0, (newPassage.heads.length - 1).clamp(0, 1 << 30));
           _passage = newPassage;
           _textDiff = textDiff;
           _custTitleSize = _calculateTitleSize(textDiff);
@@ -350,23 +404,23 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
 
         if (retryCount < 2) {
           AppLogger.info(" 🔄 Retrying passage load...");
-          await Future.delayed(const Duration(microseconds: 500));
+          await Future.delayed(const Duration(milliseconds: 300));
           _initFromCacheOrDefault(retryCount: retryCount + 1);
         } else {
           AppLogger.info(" ❌ Final failure - showing default passage.");
-
-          if (mounted) {
-            setState(() {
-              _passage = Passage(tr("something_wrong"), [tr("no_results")]);
-            });
-          }
+          if (!mounted) return;
+          setState(() {
+            _passage = Passage(tr("something_wrong"), [tr("no_results")]);
+            _headIndex = 0;
+          });
         }
       }
     });
   }
 
-  double _calculateTitleSize(diff) => _defaultTitleSize + diff;
-  double _calcualteTextSize(diff) => _defaultTextSize + diff;
+  // ---- Utils ----
+  double _calculateTitleSize(double diff) => _defaultTitleSize + diff;
+  double _calcualteTextSize(double diff) => _defaultTextSize + diff;
 }
 
 class MenuItem extends StatelessWidget {
@@ -389,10 +443,7 @@ class MenuItem extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Icon(
-            icon,
-            color: iconTint,
-          ),
+          child: Icon(icon, color: iconTint),
         ),
         Text(text),
       ],
