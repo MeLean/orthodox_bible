@@ -1,18 +1,15 @@
-// lib/screens/splash/splash_screen.dart
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:bulgarian.orthodox.bible/app/localization.dart';
 import 'package:bulgarian.orthodox.bible/app/mixins/cache.dart';
 import 'package:bulgarian.orthodox.bible/app/mixins/loading.dart';
-import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart'; // ✅ back
+import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart';
 import 'package:bulgarian.orthodox.bible/app/routes.dart';
 import 'package:bulgarian.orthodox.bible/app/widgets/app_locale_picker.dart';
 import 'package:bulgarian.orthodox.bible/screens/splash/pasages_repo.dart';
-import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 
-import '../../api/rest_client.dart';
 import '../../app_logger.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -23,13 +20,10 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with PassageManager, LoadingIndicatorProvider, AppCache {
-  // ✅ PassageManager restored
   bool _shouldShowPicker = false;
-  bool _allPassagesAvailable = false;
   bool _isLoading = false;
   String? _cachedLanguageCode;
-
-  String _msg = '';
+  String? _errorMsg; // generic error, no “internet required” text
 
   @override
   void initState() {
@@ -61,13 +55,13 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
                       ),
                       child: Align(
                         alignment: Alignment.bottomCenter,
-                        child: _showButtonIfNeeded(),
+                        child: _retryButtonIfError(),
                       ),
                     ),
                   ),
                 ),
 
-                // Language picker (wraps naturally, no hardcoded height)
+                // Language picker (appears only when needed)
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   child: _shouldShowPicker
@@ -104,7 +98,6 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
     }
 
     if (_cachedLanguageCode == null) {
-      AppLogger.info("Language code is null, checking device locale...");
       final deviceCode = PlatformDispatcher.instance.locale.languageCode;
       if (AppLocalization.isLanguageCodeSupported(deviceCode)) {
         _cachedLanguageCode = deviceCode;
@@ -112,30 +105,27 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
         AppLogger.info("✅ Adopted device locale: $deviceCode");
       } else {
         setState(() => _shouldShowPicker = true);
-        return; // stop flow until user picks
+        return; // wait for user to pick
       }
     }
 
-    // We have a language → continue once
     await _continueInit();
   }
 
   Future<void> _continueInit() async {
-    _allPassagesAvailable = await arePassagesLoaded(_cachedLanguageCode); // ✅ now resolves
-    AppLogger.info("Passages available: $_allPassagesAvailable");
-
     AppLogger.info("Applying locale: $_cachedLanguageCode");
     await AppLocalization.applyLocaleByLanguageCodeOrDefault(
       context,
       _cachedLanguageCode!,
     );
 
-    if (_allPassagesAvailable) {
-      AppLogger.info("✅ All passages available, navigating to home...");
+    final alreadyLoaded = await arePassagesLoaded(_cachedLanguageCode);
+    AppLogger.info("Passages available (cached/local): $alreadyLoaded");
+
+    if (alreadyLoaded) {
       _goToHomeScreen();
     } else {
-      AppLogger.info("Passages not available, loading...");
-      await _loadPassages();
+      await _loadPassages(); // attempt loading (e.g., from Firebase / assets)
     }
   }
 
@@ -145,11 +135,12 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
       _cachedLanguageCode = languageCode;
       _isLoading = true;
       _shouldShowPicker = false;
+      _errorMsg = null;
     });
-    await _continueInit(); // single, linear flow
+    await _continueInit();
   }
 
-  Future<void> _goToHomeScreen() async {
+  void _goToHomeScreen() {
     AppLogger.info("🚀 Navigating to HomeScreen...");
     if (!mounted) return;
     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
@@ -157,21 +148,21 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
 
   Future<void> _loadPassages() async {
     AppLogger.info("START: _loadPassages()");
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMsg = null;
+    });
 
     try {
-      final result = await InternetAddress.lookup(RestClient.baseUrl);
-      AppLogger.info("Internet check successful: $result");
-
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        AppLogger.info("Loading passages...");
-        await PassagesRepo().loadAndCachePassages(_cachedLanguageCode!);
-        AppLogger.info("Passages loaded, navigating to home...");
-        await _goToHomeScreen();
-      }
-    } catch (ex) {
-      AppLogger.error("_loadPassages() ERROR: $ex");
-      setErrorState(ex);
+      // No internet/DNS check. Just try to load.
+      await PassagesRepo().loadAndCachePassages(_cachedLanguageCode!);
+      AppLogger.info("✅ Passages loaded, navigating to home...");
+      _goToHomeScreen();
+    } catch (ex, st) {
+      AppLogger.error("_loadPassages() ERROR: $ex\n$st");
+      setState(() {
+        _errorMsg = tr('something_wrong'); // keep it neutral & localized
+      });
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -179,26 +170,17 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
 
   // ---------------- errors / UI helpers ----------------
 
-  void setErrorState(Object ex) {
-    setState(() {
-      _isLoading = false;
-      _msg = tr('internet_needed') + ex.toString();
-    });
-  }
-
-  Widget _showButtonIfNeeded() {
-    if (_msg.isNotEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: ElevatedButton(
-          onPressed: _loadPassages,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(_msg, textAlign: TextAlign.center),
-          ),
+  Widget _retryButtonIfError() {
+    if (_errorMsg == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: ElevatedButton(
+        onPressed: _loadPassages,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(_errorMsg!, textAlign: TextAlign.center),
         ),
-      );
-    }
-    return const SizedBox.shrink();
+      ),
+    );
   }
 }
