@@ -13,6 +13,12 @@
   "navigate_by_head":"გადასვლა…",
   "something_wrong": "რაღაც არის შეცდომა!",
   "recent_searches": "ბოლო ძიებები:",
+  "tip_info": "ინფორმაცია",
+  "tip_previous_head": "წინა თავი",
+  "tip_next_head": "შემდეგი თავი",
+  "tip_increase_text_size": "ტექსტის ზომის გაზრდა",
+  "tip_decrease_text_size": "ტექსტის ზომის შემცირება",
+  "tip_search": "ძებნა",
   "new_order_file_num_str": "40",
   "max_file_num_str": "66"
 }

@@ -1,14 +1,13 @@
 import 'package:bulgarian.orthodox.bible/app/localization.dart';
 import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../app/constants.dart';
 import '../../app/mixins/cache.dart';
 import '../../app/models/passage.dart';
 import '../../app/routes.dart';
 import '../../app/widgets/app_lcon_button.dart';
-import 'package:easy_localization/easy_localization.dart';
-
 import '../../app_logger.dart';
 import '../../main.dart';
 
@@ -43,25 +42,30 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   int _headIndex = _defaultHeadIndex;
 
   // guards
-  bool _isSwitchingPage = false; // serialize page/file switches
-  bool _handlingEdgeSwipe = false; // guard ghost-page transitions
-  bool _didSetInitialPage = false; // prevent brief ghost on first attach
+  bool _isSwitchingPage = false;
+  bool _handlingEdgeSwipe = false;
+  bool _didSetInitialPage = false;
 
-  // ---- Ghost-page helpers (sentinels at both ends) ----
+  // Focus nodes for accessibility
+  final Map<int, FocusNode> _focusNodes = {};
+
+  // ---- Ghost-page helpers ----
   int get _virtualItemCount => (_passage?.heads.length ?? 0) + 2; // leading + trailing ghost
-  int _logicalToPage(int headIndex) => headIndex + 1; // [0..N-1] -> [1..N]
-  int _pageToLogical(int pageIndex) => pageIndex - 1; // [1..N]   -> [0..N-1]
+  int _logicalToPage(int headIndex) => headIndex + 1;
+  int _pageToLogical(int pageIndex) => pageIndex - 1;
 
   @override
   void initState() {
     super.initState();
-    // Start on page 1 because page 0 is a leading ghost page.
     _pageController = PageController(initialPage: 1, keepPage: true);
     WidgetsBinding.instance.addPostFrameCallback((_) => _initFromCacheOrDefault());
   }
 
   @override
   void dispose() {
+    for (final node in _focusNodes.values) {
+      node.dispose();
+    }
     _pageController.dispose();
     super.dispose();
   }
@@ -70,7 +74,6 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
   Widget build(BuildContext context) {
     final hasHeads = _passage?.heads.isNotEmpty ?? false;
 
-    // As soon as heads attach, instantly place the controller on the REAL page (no flash of ghost).
     if (hasHeads && !_didSetInitialPage) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _ensureInitialPage());
     }
@@ -83,14 +86,13 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
                 key: ValueKey('file:$_fileNum:heads:${_passage!.heads.length}'),
                 controller: _pageController,
                 physics: const PageScrollPhysics(parent: BouncingScrollPhysics()),
-                itemCount: _virtualItemCount, // heads + 2 ghosts
+                itemCount: _virtualItemCount,
                 onPageChanged: (pageIndex) async {
                   if (_handlingEdgeSwipe) return;
 
                   final lastVirtual = _virtualItemCount - 1;
 
                   if (pageIndex == 0) {
-                    // Leading ghost → previous file (once)
                     _handlingEdgeSwipe = true;
                     await _switchToPreviousFile();
                     _handlingEdgeSwipe = false;
@@ -98,31 +100,33 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
                   }
 
                   if (pageIndex == lastVirtual) {
-                    // Trailing ghost → next file (once)
                     _handlingEdgeSwipe = true;
                     await _switchToNextFile();
                     _handlingEdgeSwipe = false;
                     return;
                   }
 
-                  // Normal head page
                   final newHeadIndex = _pageToLogical(pageIndex);
                   if (newHeadIndex != _headIndex) {
                     _headIndex = newHeadIndex;
                     saveHeadIndex(_headIndex);
-                    setState(() {}); // reflect toolbar/back/forward availability
+                    setState(() {});
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _focusNodes[_headIndex]?.requestFocus();
+                    });
                   }
                 },
                 itemBuilder: (context, pageIndex) {
                   final heads = _passage!.heads;
                   final lastVirtual = _virtualItemCount - 1;
 
-                  // Ghost pages (empty spacers)
                   if (pageIndex == 0 || pageIndex == lastVirtual) {
                     return const SizedBox.expand();
                   }
 
                   final logicalIndex = _pageToLogical(pageIndex);
+                  _focusNodes.putIfAbsent(logicalIndex, () => FocusNode());
+
                   return SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                     child: Column(
@@ -139,11 +143,18 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Text(
-                          heads.isNotEmpty ? heads[logicalIndex] : '',
-                          style: TextStyle(
-                            fontSize: _custTextSize,
-                            height: 1.35,
+                        Focus(
+                          focusNode: _focusNodes[logicalIndex],
+                          child: Semantics(
+                            label: heads.isNotEmpty ? heads[logicalIndex] : '',
+                            readOnly: true,
+                            child: Text(
+                              heads.isNotEmpty ? heads[logicalIndex] : '',
+                              style: TextStyle(
+                                fontSize: _custTextSize,
+                                height: 1.35,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -151,18 +162,20 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
                   );
                 },
               )
-            : const SizedBox.expand(), // nothing until data attaches (no ghost flash)
+            : const SizedBox.expand(),
       ),
     );
   }
 
-  // Ensure we never show the leading ghost on first attach (jump, not animate).
   Future<void> _ensureInitialPage() async {
     if (!mounted) return;
     if (!_pageController.hasClients) return;
     try {
       _didSetInitialPage = true;
       _pageController.jumpToPage(_logicalToPage(_headIndex));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _focusNodes[_headIndex]?.requestFocus();
+      });
     } catch (_) {}
   }
 
@@ -172,31 +185,37 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       AppIconButton(
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.info),
         icon: const Icon(Icons.info_outline),
+        contentDescription: tr('tip_info'),
         disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
         onPressed: _safePrevHeadTap,
         icon: const Icon(Icons.arrow_back),
+        contentDescription: tr('tip_previous_head'),
         disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
         onPressed: _safeNextHeadTap,
         icon: const Icon(Icons.arrow_forward),
+        contentDescription: tr('tip_next_head'),
         disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
         onPressed: _increaseTextsize,
         icon: const Icon(Icons.add),
+        contentDescription: tr('tip_increase_text_size'),
         disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
         onPressed: _decreseTextsize,
         icon: const Icon(Icons.remove),
+        contentDescription: tr('tip_decrease_text_size'),
         disableAfterClick: _defaultDuration,
       ),
       AppIconButton(
         onPressed: () => Navigator.of(context).pushNamed(AppRoutes.search),
         icon: const Icon(Icons.manage_search),
+        contentDescription: tr('tip_search'),
         disableAfterClick: _defaultDuration,
       ),
       PopupMenuButton(
@@ -252,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
     }
   }
 
-  // ---- Navigation (serialize + await animations) ----
+  // ---- Navigation ----
   Future<void> _safeNextHeadTap() async {
     await _guardedSwitch(() async => _getNextHead());
   }
@@ -289,8 +308,11 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
           curve: _defaultCurve,
         );
       }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _focusNodes[_headIndex]?.requestFocus();
+      });
     } else {
-      await _switchToNextFile(); // direct file switch
+      await _switchToNextFile();
     }
   }
 
@@ -306,12 +328,15 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
           curve: _defaultCurve,
         );
       }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _focusNodes[_headIndex]?.requestFocus();
+      });
     } else if (_fileNum > _startingFileNum) {
-      await _switchToPreviousFile(); // direct file switch
+      await _switchToPreviousFile();
     }
   }
 
-  // ---- Direct file switches for ghost pages ----
+  // ---- File switching ----
   Future<void> _switchToNextFile() async {
     final maxNum = maxFileNum();
     final nextFile =
@@ -322,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       nextFile,
       AppLocalization.getLanguageCode(context),
     );
-    await _cacheAndUpdate(nextFile, _defaultHeadIndex, passage); // first head in next file
+    await _cacheAndUpdate(nextFile, _defaultHeadIndex, passage);
   }
 
   Future<void> _switchToPreviousFile() async {
@@ -335,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       AppLocalization.getLanguageCode(context),
     );
     final lastHead = passage.heads.isNotEmpty ? passage.heads.length - 1 : 0;
-    await _cacheAndUpdate(prevFile, lastHead, passage); // last head in previous file
+    await _cacheAndUpdate(prevFile, lastHead, passage);
   }
 
   Future<void> _cacheAndUpdate(int fileNum, int headIndex, Passage passage) async {
@@ -347,11 +372,9 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
       _fileNum = fileNum;
       _headIndex = headIndex.clamp(0, (passage.heads.length - 1).clamp(0, 1 << 30));
       _passage = passage;
-      // prevent the PageView from flashing a ghost on the first frame of a new file
       _didSetInitialPage = true;
     });
 
-    // Animate to the new head after the PageView (with ghosts) reattaches
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || !_pageController.hasClients) return;
       try {
@@ -360,6 +383,7 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
           duration: _defaultDuration,
           curve: _defaultCurve,
         );
+        _focusNodes[_headIndex]?.requestFocus();
       } catch (_) {}
     });
   }
@@ -384,8 +408,6 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
         final languageCode = AppLocalization.getLanguageCode(context);
         final newPassage = await loadPassage(context, fileNum, languageCode);
 
-        AppLogger.info("🏠 initFromCache lang:$languageCode title:${newPassage.title} file:$fileNum head:$headIndex");
-
         setState(() {
           _fileNum = fileNum;
           _headIndex = (headIndex).clamp(0, (newPassage.heads.length - 1).clamp(0, 1 << 30));
@@ -393,17 +415,15 @@ class _HomeScreenState extends State<HomeScreen> with PassageManager, AppCache {
           _textDiff = textDiff;
           _custTitleSize = _calculateTitleSize(textDiff);
           _custTextSize = _calcualteTextSize(textDiff);
-          _didSetInitialPage = false; // allow _ensureInitialPage() to jump once
+          _didSetInitialPage = false;
         });
       } catch (e, stackTrace) {
         AppLogger.info(" ❌ Error loading passage (Attempt: $retryCount): $e\n$stackTrace");
 
         if (retryCount < 2) {
-          AppLogger.info(" 🔄 Retrying passage load...");
           await Future.delayed(const Duration(milliseconds: 300));
           _initFromCacheOrDefault(retryCount: retryCount + 1);
         } else {
-          AppLogger.info(" ❌ Final failure - showing default passage.");
           if (!mounted) return;
           setState(() {
             _passage = Passage(tr("something_wrong"), [tr("no_results")]);

@@ -5,11 +5,13 @@ class AppIconButton extends StatefulWidget {
     Key? key,
     required this.onPressed,
     required this.icon,
+    required this.contentDescription,
     this.disableAfterClick = const Duration(milliseconds: 0),
   }) : super(key: key);
 
   final Function onPressed;
   final Widget icon;
+  final String contentDescription;
   final Duration disableAfterClick;
 
   @override
@@ -34,6 +36,7 @@ class _AppIconButtonState extends State<AppIconButton> {
         }
       },
       icon: widget.icon,
+      tooltip: widget.contentDescription,
     );
   }
 }
