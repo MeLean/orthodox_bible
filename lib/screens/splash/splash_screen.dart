@@ -1,3 +1,5 @@
+// lib/screens/splash/splash_screen.dart
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:bulgarian.orthodox.bible/app/localization.dart';
@@ -7,6 +9,7 @@ import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart';
 import 'package:bulgarian.orthodox.bible/app/routes.dart';
 import 'package:bulgarian.orthodox.bible/app/widgets/app_locale_picker.dart';
 import 'package:bulgarian.orthodox.bible/screens/splash/pasages_repo.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -23,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
   bool _shouldShowPicker = false;
   bool _isLoading = false;
   String? _cachedLanguageCode;
-  String? _errorMsg; // generic error, no “internet required” text
+  String? _errorMsg;
 
   @override
   void initState() {
@@ -40,7 +43,7 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
           children: [
             Column(
               children: [
-                // Cross image area (keeps ratio on black background)
+                // Cross image area
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -61,7 +64,7 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
                   ),
                 ),
 
-                // Language picker (appears only when needed)
+                // Language picker
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   child: _shouldShowPicker
@@ -105,7 +108,7 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
         AppLogger.info("✅ Adopted device locale: $deviceCode");
       } else {
         setState(() => _shouldShowPicker = true);
-        return; // wait for user to pick
+        return; // wait for user
       }
     }
 
@@ -125,7 +128,7 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
     if (alreadyLoaded) {
       _goToHomeScreen();
     } else {
-      await _loadPassages(); // attempt loading (e.g., from Firebase / assets)
+      await _loadPassages();
     }
   }
 
@@ -143,32 +146,74 @@ class _SplashScreenState extends State<SplashScreen> with PassageManager, Loadin
   void _goToHomeScreen() {
     AppLogger.info("🚀 Navigating to HomeScreen...");
     if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.home,
+      (route) => false,
+    );
   }
 
   Future<void> _loadPassages() async {
     AppLogger.info("START: _loadPassages()");
-    setState(() {
-      _isLoading = true;
-      _errorMsg = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMsg = null;
+      });
+    }
 
     try {
-      // No internet/DNS check. Just try to load.
+      // Step 1: check connectivity
+      final connectivity = await Connectivity().checkConnectivity();
+      // ignore: unrelated_type_equality_checks
+      if (connectivity == ConnectivityResult.none) {
+        AppLogger.error("❌ No network connection");
+        if (mounted) {
+          setState(() {
+            _errorMsg = tr('no_internet');
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Step 2: verify actual internet access
+      final hasInternet = await _hasInternetAccess();
+      if (!hasInternet) {
+        AppLogger.error("❌ No internet access");
+        if (mounted) {
+          setState(() {
+            _errorMsg = tr('internet_needed');
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Step 3: load passages
       await PassagesRepo().loadAndCachePassages(_cachedLanguageCode!);
       AppLogger.info("✅ Passages loaded, navigating to home...");
       _goToHomeScreen();
     } catch (ex, st) {
       AppLogger.error("_loadPassages() ERROR: $ex\n$st");
-      setState(() {
-        _errorMsg = tr('something_wrong'); // keep it neutral & localized
-      });
+      if (mounted) {
+        setState(() {
+          _errorMsg = tr('something_wrong');
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // ---------------- errors / UI helpers ----------------
+  Future<bool> _hasInternetAccess() async {
+    try {
+      final result = await InternetAddress.lookup("google.com").timeout(const Duration(seconds: 3));
+      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Widget _retryButtonIfError() {
     if (_errorMsg == null) return const SizedBox.shrink();
