@@ -46,61 +46,65 @@ class _LocaleTile extends StatelessWidget {
         final flagW = (c.maxWidth * 0.6).clamp(80.0, 100.0);
         final flagH = flagW * 0.5;
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InkWell(
-              key: ValueKey(locale),
-              onTap: onTap,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 1,
+        return InkWell(
+          key: ValueKey(locale),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.all(4.0), // some breathing space
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: SizedBox(
+                    width: flagW,
+                    height: flagH,
+                    child: Image.asset(
+                      'assets/flags/$locale.png',
+                      fit: BoxFit.fill,
+                    ),
                   ),
                 ),
-                child: SizedBox(
-                  width: flagW,
-                  height: flagH,
-                  child: Image.asset(
-                    'assets/flags/$locale.png',
-                    fit: BoxFit.fill,
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    _getTranslatedText(locale),
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                _getTranslatedText(locale),
-                textAlign: TextAlign.center,
-                softWrap: true,
-                maxLines: 2, // avoids overflow
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
-          ],
+          ),
         );
       },
     );
   }
 }
 
-// unchanged
-String _getTranslatedText(String curLocale) {
-  switch (curLocale) {
+String _getTranslatedText(String locale) {
+  switch (locale) {
     case "bg":
-      return "Чети на Български";
+      return "Български";
     case "ka":
-      return "წაიკითხეთ ქართულად";
+      return "ქართული";
     case "ru":
-      return "Читать по-русски";
+      return "Русский";
     default:
-      return "Read in $curLocale";
+      return locale.toUpperCase();
   }
 }
