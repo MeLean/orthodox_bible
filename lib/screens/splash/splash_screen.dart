@@ -1,15 +1,19 @@
+// lib/screens/splash/splash_screen.dart
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:bulgarian.orthodox.bible/app/localization.dart';
+import 'package:bulgarian.orthodox.bible/app/mixins/cache.dart';
 import 'package:bulgarian.orthodox.bible/app/mixins/loading.dart';
+import 'package:bulgarian.orthodox.bible/app/mixins/passage_manager.dart';
 import 'package:bulgarian.orthodox.bible/app/routes.dart';
+import 'package:bulgarian.orthodox.bible/app/widgets/app_locale_picker.dart';
 import 'package:bulgarian.orthodox.bible/screens/splash/pasages_repo.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:easy_localization/easy_localization.dart';
-
-import '../../api/rest_client.dart';
-import '../../app/mixins/passage_manager.dart';
+import '../../app_logger.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -18,100 +22,210 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with PassageManager, LoadingIndicatorProvider {
-  bool _shouldLoadData = false;
-  bool _isLoading = true;
-  String _msg = '';
+class _SplashScreenState extends State<SplashScreen> with PassageManager, LoadingIndicatorProvider, AppCache {
+  bool _shouldShowPicker = false;
+  bool _isLoading = false;
+  String? _cachedLanguageCode;
+  String? _errorMsg;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initApp();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initApp());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(children: [
-        _shouldLoadData ? _createDataLoadingScreen() : Container(),
-        _isLoading ? provideLoadingIndicator() : Container(),
-      ]),
-    );
-  }
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                // Cross image area
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        color: Colors.black,
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/orthodox_cross.png'),
+                          fit: BoxFit.contain,
+                          alignment: Alignment.center,
+                        ),
+                      ),
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: _retryButtonIfError(),
+                      ),
+                    ),
+                  ),
+                ),
 
-  Widget _createDataLoadingScreen() {
-    return Padding(
-      padding: const EdgeInsets.only(
-        top: 12.0,
-        left: 24.0,
-        right: 24.0,
-        bottom: 64.0,
-      ),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/orthodox_cross.png'),
-            fit: BoxFit.fitWidth,
-          ),
+                // Language picker
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: _shouldShowPicker
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(8.0, 12.0, 8.0, 8.0),
+                          child: AppLocalePicker(
+                            supportedLocales: AppLocalization.getSupprotedLanguageCodes(),
+                            localePickedCallback: (String languageCode) {
+                              _onLocalePicked(languageCode);
+                            },
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
+            if (_isLoading) provideLoadingIndicator(context),
+          ],
         ),
-        child: Align(alignment: FractionalOffset.bottomCenter, child: showButtonIfNeeded()),
       ),
     );
   }
 
-  void _initApp() async {
-    AppLocalization.applySystemLocaleOrDefault(context);
-    final passagesAvailable = await arePassagesLoaded();
+  // ---------------- lifecycle / flow ----------------
 
-    if (passagesAvailable) {
+  Future<void> _initApp() async {
+    AppLogger.info("START: _initApp()");
+
+    try {
+      _cachedLanguageCode = await loadCachedLanguageCodeOrNull();
+      AppLogger.info(" 🔤 Cached Language Code Loaded: $_cachedLanguageCode");
+    } catch (e, stack) {
+      AppLogger.info(" ❌ Decryption Error: $e\n$stack");
+    }
+
+    if (_cachedLanguageCode == null) {
+      final deviceCode = PlatformDispatcher.instance.locale.languageCode;
+      if (AppLocalization.isLanguageCodeSupported(deviceCode)) {
+        _cachedLanguageCode = deviceCode;
+        await saveLanguageCode(deviceCode);
+        AppLogger.info("✅ Adopted device locale: $deviceCode");
+      } else {
+        setState(() => _shouldShowPicker = true);
+        return; // wait for user
+      }
+    }
+
+    await _continueInit();
+  }
+
+  Future<void> _continueInit() async {
+    AppLogger.info("Applying locale: $_cachedLanguageCode");
+    await AppLocalization.applyLocaleByLanguageCodeOrDefault(
+      context,
+      _cachedLanguageCode!,
+    );
+
+    final alreadyLoaded = await arePassagesLoaded(_cachedLanguageCode);
+    AppLogger.info("Passages available (cached/local): $alreadyLoaded");
+
+    if (alreadyLoaded) {
       _goToHomeScreen();
     } else {
-      setState(() => _shouldLoadData = true);
-      _loadPassages();
+      await _loadPassages();
     }
   }
 
-  Future<void> _goToHomeScreen() async {
-    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
+  Future<void> _onLocalePicked(String languageCode) async {
+    await saveLanguageCode(languageCode);
+    setState(() {
+      _cachedLanguageCode = languageCode;
+      _isLoading = true;
+      _shouldShowPicker = false;
+      _errorMsg = null;
+    });
+    await _continueInit();
+  }
+
+  void _goToHomeScreen() {
+    AppLogger.info("🚀 Navigating to HomeScreen...");
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.home,
+      (route) => false,
+    );
   }
 
   Future<void> _loadPassages() async {
-    setState(() => _isLoading = true);
-    try {
-      final result = await InternetAddress.lookup(RestClient.baseUrl);
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        PassagesRepo()
-            .loadAndCachePassages()
-            .then(
-              (_) => _goToHomeScreen(),
-            )
-            .onError(
-              (error, stackTrace) => debugPrint(error.toString()),
-            );
-      }
-    } catch (ex) {
+    AppLogger.info("START: _loadPassages()");
+    if (mounted) {
       setState(() {
-        _isLoading = false;
-        _msg = tr('internet_needed' + ex.toString());
+        _isLoading = true;
+        _errorMsg = null;
       });
+    }
+
+    try {
+      // Step 1: check connectivity
+      final connectivity = await Connectivity().checkConnectivity();
+      // ignore: unrelated_type_equality_checks
+      if (connectivity == ConnectivityResult.none) {
+        AppLogger.error("❌ No network connection");
+        if (mounted) {
+          setState(() {
+            _errorMsg = tr('no_internet');
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Step 2: verify actual internet access
+      final hasInternet = await _hasInternetAccess();
+      if (!hasInternet) {
+        AppLogger.error("❌ No internet access");
+        if (mounted) {
+          setState(() {
+            _errorMsg = tr('internet_needed');
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Step 3: load passages
+      await PassagesRepo().loadAndCachePassages(_cachedLanguageCode!);
+      AppLogger.info("✅ Passages loaded, navigating to home...");
+      _goToHomeScreen();
+    } catch (ex, st) {
+      AppLogger.error("_loadPassages() ERROR: $ex\n$st");
+      if (mounted) {
+        setState(() {
+          _errorMsg = tr('something_wrong');
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Widget showButtonIfNeeded() {
-    if (_msg.isNotEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: ElevatedButton(
-            onPressed: () => _loadPassages(),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(_msg, textAlign: TextAlign.center),
-            )),
-      );
-    } else {
-      return Container();
+  Future<bool> _hasInternetAccess() async {
+    try {
+      final result = await InternetAddress.lookup("google.com").timeout(const Duration(seconds: 3));
+      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
     }
+  }
+
+  Widget _retryButtonIfError() {
+    if (_errorMsg == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: ElevatedButton(
+        onPressed: _loadPassages,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(_errorMsg!, textAlign: TextAlign.center),
+        ),
+      ),
+    );
   }
 }

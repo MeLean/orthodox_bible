@@ -1,83 +1,69 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 mixin AppCache {
-  static const _darkKeY = 'dark_mode_key';
-  static const _encrStorage = FlutterSecureStorage();
+  static const _darkKey = 'dark_mode_key';
   static const _fileNumKey = 'file_num';
   static const _headIndexKey = 'head_index_num';
   static const _textSizeKey = 'text_size';
-  static const _localeKey = 'cached_locale';
+  static const _languageCode = 'cached_language_code';
 
+  /// ✅ Save file number
   Future<void> saveFileNum(int num) async {
-    return _saveString(_fileNumKey, num.toString());
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_fileNumKey, num);
   }
 
+  /// ✅ Save head index
   Future<void> saveHeadIndex(int index) async {
-    return _saveString(_headIndexKey, index.toString());
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_headIndexKey, index);
   }
 
+  /// ✅ Save text size difference
   Future<void> saveDiffSize(double size) async {
-    return _saveString(_textSizeKey, size.toString());
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_textSizeKey, size);
   }
 
-  Future<void> saveLocale(String locale) async {
-    return _saveString(_localeKey, locale);
+  /// ✅ Save language code
+  Future<void> saveLanguageCode(String languageCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_languageCode, languageCode);
   }
 
+  /// ✅ Save dark mode preference
   Future<void> saveLightMode(String mode) async {
-    return _saveString(_darkKeY, mode);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_darkKey, mode);
   }
 
+  /// ✅ Load file number (default if missing)
   Future<int> loadFileNum(int defaultValue) async {
-    return await _loadInt(_fileNumKey) ?? defaultValue;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_fileNumKey) ?? defaultValue;
   }
 
+  /// ✅ Load head index (default if missing)
   Future<int> loadHeadIndex(int defaultValue) async {
-    return await _loadInt(_headIndexKey) ?? defaultValue;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_headIndexKey) ?? defaultValue;
   }
 
+  /// ✅ Load text size difference (default if missing)
   Future<double> loadTextSizeDiff(double defaultValue) async {
-    final strValue = await _loadString(_textSizeKey);
-    double result = defaultValue;
-
-    try {
-      if (strValue != null) {
-        result = double.parse(strValue);
-      }
-    } on Exception {
-      //do nothing
-    }
-
-    return result;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_textSizeKey) ?? defaultValue;
   }
 
-  Future<String> loadCachedLocale(String defaultLocaleName) async {
-    return await _loadString(_localeKey) ?? defaultLocaleName;
+  /// ✅ Load cached language code
+  Future<String?> loadCachedLanguageCodeOrNull() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_languageCode);
   }
 
-  Future<String?> loadlightMode() async {
-    return _loadString(_darkKeY);
-  }
-
-  Future<void> _saveString(String key, String value) async {
-    return _encrStorage.write(key: key, value: value);
-  }
-
-  Future<int?> _loadInt(String key) async {
-    final str = await _loadString(key);
-    int? result;
-    try {
-      if (str != null) {
-        result = int.parse(str);
-      }
-    } on Exception {
-      result = null;
-    }
-
-    return result;
-  }
-
-  Future<String?> _loadString(String key) async {
-    return _encrStorage.read(key: key);
+  /// ✅ Load dark mode preference
+  Future<String?> loadLightMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_darkKey);
   }
 }

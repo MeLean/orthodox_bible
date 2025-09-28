@@ -47,8 +47,7 @@ class SearchResult {
 
   String toJson() => json.encode(toMap());
 
-  factory SearchResult.fromJson(String source) =>
-      SearchResult.fromMap(json.decode(source));
+  factory SearchResult.fromJson(String source) => SearchResult.fromMap(json.decode(source));
 
   @override
   String toString() {
@@ -68,11 +67,8 @@ class SearchResult {
 
   @override
   int get hashCode {
-    return passageTitle.hashCode ^
-        headIndex.hashCode ^
-        rowNum.hashCode ^
-        text.hashCode;
+    return passageTitle.hashCode ^ headIndex.hashCode ^ rowNum.hashCode ^ text.hashCode;
   }
 
-  String prityPrint() => '"$text"\n$passageTitle [${headIndex + 1} : $rowNum]';
+  String prityPrint() => '$passageTitle [${headIndex + 1} : $rowNum]\n"$text"';
 }

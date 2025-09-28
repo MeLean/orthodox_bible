@@ -38,8 +38,7 @@ class Passage {
 
   String toJson() => json.encode(toMap());
 
-  factory Passage.fromJson(String source) =>
-      Passage.fromMap(json.decode(source));
+  factory Passage.fromJson(String source) => Passage.fromMap(json.decode(source));
 
   @override
   String toString() => 'Passage(title: $title, heads: $heads)';
@@ -48,9 +47,7 @@ class Passage {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is Passage &&
-        other.title == title &&
-        listEquals(other.heads, heads);
+    return other is Passage && other.title == title && listEquals(other.heads, heads);
   }
 
   @override

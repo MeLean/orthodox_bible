@@ -5,10 +5,21 @@
     "go_light": "Светла тема",
     "go_dark": "Тъмна тема",
     "type_to_search": "Въведи текст за търсене",
-    "go_to": "Виж",
+    "go_there": "Виж",
     "search_to_short": "Текста за търсене трявба да е поне %s символа!",
     "no_results": "Няма намерени резултати!",
     "copy": "Копирай",
     "done": "Готово",
-    "something_wrong": "Нещо се обърка!"
+    "navigate_by_head":"Навигирай до...",
+    "something_wrong": "Нещо се обърка!",
+    "recent_searches": "Последни търсения:",
+    "clear": "Изчисти",
+    "tip_info": "Информация",
+    "tip_previous_head": "Предишна глава",
+    "tip_next_head": "Следваща глава",
+    "tip_increase_text_size": "Увеличаване на текста",
+    "tip_decrease_text_size": "Намаляване на текста",
+    "tip_search": "Търсене",
+    "new_order_file_num_str": "51",
+    "max_file_num_str": "77"
 } 
